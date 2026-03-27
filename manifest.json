@@ -3,7 +3,8 @@
   "name": "WeChat Publisher",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "在 Obsidian 里预览、复制并发布微信公众号样式内容。",
-  "author": "lijiong",
+  "description": "Preview and publish Obsidian notes to WeChat Official Account with one click.",
+  "author": "RanceLee233",
+  "authorUrl": "https://blog.discoverlabs.ac.cn",
   "isDesktopOnly": false
 }
