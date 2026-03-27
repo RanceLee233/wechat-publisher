@@ -4,7 +4,7 @@
 
 WeChat Publisher 是一个 Obsidian 插件，让你在熟悉的写作环境里完成公众号排版，无需离开 Obsidian 就能发布。
 
-**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.0，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
+**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.4，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
 
 ---
 
@@ -133,7 +133,7 @@ RanceLee233/wechat-publisher
 
 ![插件界面](https://cf-img.discoverlabs.ac.cn/20260327265d84010f9ccf2a4d288d9ac8f2dccc.webp)
 
-顶部操作栏从左到右：**格式** · **账号名称** · **账号配置** · **刷新预览** · **复制 HTML** · **跳转公众号平台** · **发布草稿**
+顶部操作栏从左到右：**格式** · **账号名称** · **账号配置及激活** · **用户指南** · **刷新渲染** · **复制HTML（免费）** · **去公众号粘贴（免费）** · **发布草稿（收费）**
 
 ### 格式与主题
 
@@ -175,6 +175,8 @@ RanceLee233/wechat-publisher
 ![绑定成功](https://cf-img.discoverlabs.ac.cn/2026032762404f3e91d91b254ab9489a0af2f758.webp)
 
 > 1 个激活码绑定 1 个 AppID，不支持改绑。换电脑后点「刷新授权状态」即可恢复，无需重新输入。
+>
+> **绑定成功后，记得在插件顶部工具栏的账号下拉框中选择该账号**——下拉框位于账号名称旁边，选中后插件才会使用这个账号发布。
 
 ### 发布草稿（付费）
 
