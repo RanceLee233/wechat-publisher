@@ -138,15 +138,19 @@
   line-height: 1.6;
 }
 
-.wechat-publisher-purchase-card__qr-placeholder {
-  display: grid;
-  place-items: center;
-  margin-top: 12px;
-  min-height: 180px;
-  border: 1px dashed var(--background-modifier-border);
-  border-radius: 14px;
+.wechat-publisher-purchase-card__qr {
+  display: block;
+  margin: 12px auto 8px;
+  width: 180px;
+  height: 180px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.wechat-publisher-purchase-card__line--hint {
+  margin-top: 6px;
+  font-size: 0.88em;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.78);
 }
 
 .wechat-publisher-style-modal .modal-content {
