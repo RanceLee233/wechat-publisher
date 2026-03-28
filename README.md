@@ -235,9 +235,9 @@ RanceLee233/wechat-publisher
 公众号
 你的公众号名称
 AppID
-wxb3f8a2e9c7d10456
+wx_your_appid_here
 AppSecret
-e4a27f3c1b9d8056f2e8a3c7b4d90561
+your_appsecret_here
 ```
 
 #### 如何获取 AppID 和 AppSecret
