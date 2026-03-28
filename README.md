@@ -4,7 +4,7 @@
 
 WeChat Publisher 是一个 Obsidian 插件，让你在熟悉的写作环境里完成公众号排版，无需离开 Obsidian 就能发布。
 
-**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.4，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
+**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.6，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
 
 ---
 
@@ -133,7 +133,7 @@ RanceLee233/wechat-publisher
 
 ![插件界面](https://cf-img.discoverlabs.ac.cn/20260327265d84010f9ccf2a4d288d9ac8f2dccc.webp)
 
-顶部操作栏从左到右：**格式** · **账号名称** · **账号配置及激活** · **用户指南** · **刷新渲染** · **复制HTML（免费）** · **去公众号粘贴（免费）** · **发布草稿（收费）**
+顶部操作栏从左到右：**格式** · **账号名称** · **账号配置** · **购买激活** · **用户指南** · **刷新渲染** · **复制HTML（免费）** · **去公众号粘贴（免费）** · **发布草稿（收费）**
 
 ### 格式与主题
 
@@ -143,40 +143,38 @@ RanceLee233/wechat-publisher
 
 ### 账号配置（付费）
 
-点击**账号配置**，填写公众号 AppID 和 AppSecret。
-
-![账号配置](https://cf-img.discoverlabs.ac.cn/2026032724e0825e42bccb6bc54e4d7a4ab2857b.webp)
+点击**账号配置**，弹窗顶部以标签页（Tab）形式列出所有已添加的账号，点击切换；右侧标有"已激活"/"未激活"状态。
 
 | 字段 | 说明 |
 |------|------|
 | 账号名称 | 自定义名称，方便区分多个公众号 |
 | AppID | 微信公众平台「基础信息」页获取 |
 | AppSecret | 需在平台手动启用，只显示一次请立即保存 |
+| 账号授权 | 显示激活状态（✅ 已绑定 / 未绑定），点击「刷新授权状态」重新验证 |
 | IP 白名单辅助 | 插件自动检测公网 IP，复制后填入微信平台白名单 |
 | 默认作者 / 默认封面 | 可选，发布时自动使用 |
 | 设为默认账号 | 开启后，打开插件时自动选中该账号 |
 
-**获取 AppID 和 AppSecret**：打开 `developers.weixin.qq.com` → 前往控制台 → 找到公众号 → 基础信息页。
+**快速粘贴新建账号**：点击「快速粘贴新建账号」，将微信公众平台「基础信息」页全选复制的内容粘贴进来，插件自动识别账号名、AppID 和 AppSecret，一键完成添加。
 
-![获取 AppID](https://cf-img.discoverlabs.ac.cn/20260327338a1f10db1b76c8dfb8661961a2b5ac.webp)
+![快速粘贴新建账号](https://cf-img.discoverlabs.ac.cn/202603281f45c5665594bf984cf5dccce8e9755e.webp)
+
+**获取 AppID 和 AppSecret**：打开 `developers.weixin.qq.com` → 前往控制台 → 找到公众号 → 基础信息页。
 
 **配置 IP 白名单**：点击「检测本机 IP」获取公网 IP，复制后填入微信公众平台「API IP 白名单」。
 
-![IP 白名单](https://cf-img.discoverlabs.ac.cn/202603276a9d7ae46c43ba51beae9c7f90a1754c.webp)
+### 购买与激活（付费）
 
-### 激活码绑定（付费）
+点击工具栏**购买激活**按钮，打开购买与激活弹窗。弹窗上半部分为购买二维码，下半部分为激活表单。
 
-在账号配置弹窗的「账号授权」区域填入激活码，确认 AppID 后点击**绑定当前公众号**。
+![购买激活弹窗](https://cf-img.discoverlabs.ac.cn/202603283639f1f52e9420c37e75f636b50efda5.webp)
 
-![激活码绑定](https://cf-img.discoverlabs.ac.cn/20260327835f4c00ba78a5dfc50d3f1d048bef8d.webp)
-
-绑定成功后，授权状态区域显示绑定时间和最近校验时间。
-
-![绑定成功](https://cf-img.discoverlabs.ac.cn/2026032762404f3e91d91b254ab9489a0af2f758.webp)
+1. 在账号列表中选择要绑定的公众号账号
+2. 填入激活码（格式：`WCPR-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`）
+3. 点击**绑定激活**，确认 AppID 无误后点确定
+4. 绑定成功后，回到「账号配置」点击**刷新授权状态**，即可看到「✅ 已绑定」
 
 > 1 个激活码绑定 1 个 AppID，不支持改绑。换电脑后点「刷新授权状态」即可恢复，无需重新输入。
->
-> **绑定成功后，记得在插件顶部工具栏的账号下拉框中选择该账号**——下拉框位于账号名称旁边，选中后插件才会使用这个账号发布。
 
 ### 发布草稿（付费）
 
