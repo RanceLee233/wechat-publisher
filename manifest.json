@@ -1,11 +1,11 @@
 {
   "id": "wechat-publisher",
   "name": "WeChat Publisher",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "minAppVersion": "1.5.0",
-  "description": "微信公众号发布工具 | Publish WeChat Official Account articles with formatting, image upload, and draft push.",
+  "description": "在 Obsidian 里预览、复制并发布微信公众号样式内容。",
   "author": "RanceLee",
-  "authorUrl": "https://github.com/RanceLee233",
+  "authorUrl": "https://github.com/RanceLee233/wechat-publisher",
   "fundingUrl": "https://blog.discoverlabs.ac.cn/downloads/wechat-publisher/",
   "isDesktopOnly": false
 }
