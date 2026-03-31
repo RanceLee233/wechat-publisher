@@ -2,7 +2,25 @@
   height: 100%;
   padding: 12px;
   background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 180px);
+  display: flex;
+  flex-direction: column;
 }
+
+.wechat-publisher-collapse-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.wechat-publisher-collapse-bar button {
+  padding: 4px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-primary);
+  font-size: 12px;
+}
+
 
 .wechat-publisher-toolbar {
   display: flex;
@@ -86,7 +104,8 @@
 }
 
 .wechat-publisher-preview {
-  height: calc(100% - 190px);
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 18px;
   border: 1px solid rgba(15, 76, 129, 0.12);
@@ -379,10 +398,6 @@
 @media (max-width: 900px) {
   .wechat-publisher-form {
     grid-template-columns: 1fr;
-  }
-
-  .wechat-publisher-preview {
-    height: calc(100% - 260px);
   }
 
   .wechat-publisher-slider-setting .setting-item-control {

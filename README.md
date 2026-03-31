@@ -12,7 +12,7 @@
 
 WeChat Publisher 是一个 Obsidian 插件，让你在熟悉的写作环境里完成公众号排版，无需离开 Obsidian 就能发布。
 
-**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.6，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
+**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.8，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
 
 ---
 
@@ -165,7 +165,13 @@ RanceLee233/wechat-publisher
 
 ![插件界面](https://cf-img.discoverlabs.ac.cn/20260327265d84010f9ccf2a4d288d9ac8f2dccc.webp)
 
-顶部操作栏从左到右：**格式** · **账号名称** · **账号配置** · **购买激活** · **用户指南** · **刷新渲染** · **复制HTML（免费）** · **去公众号粘贴（免费）** · **发布草稿（收费）**
+预览面板分为三个区域：
+
+**① 折叠控制栏**（始终显示）：顶部始终有一个 **⊟ 收起工具栏** 按钮。点击后工具栏和发布资料区会隐藏，预览区自动扩大，便于专注核对排版效果；再次点击 **⊞ 展开工具栏** 即可恢复。
+
+**② 工具栏**（可折叠）：从左到右依次为 **格式** · **账号名称** · **账号配置** · **购买激活** · **用户指南** · **刷新渲染** · **复制HTML（免费）** · **去公众号粘贴（免费）** · **发布草稿（收费）**
+
+**③ 发布资料区**（可折叠）：填写标题、作者和封面，仅用于本次发布，不写入笔记属性。
 
 ### 格式与主题（免费）
 
