@@ -12,7 +12,7 @@
 
 WeChat Publisher 是一个 Obsidian 插件，让你在熟悉的写作环境里完成公众号排版，无需离开 Obsidian 就能发布。
 
-**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.9，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
+**[⬇️ 下载最新版本](https://blog.discoverlabs.ac.cn/downloads/wechat-publisher-latest.zip)**（v0.1.10，国内直连）　｜　[GitHub Releases](https://github.com/RanceLee233/wechat-publisher/releases)（历史版本）
 
 ---
 
