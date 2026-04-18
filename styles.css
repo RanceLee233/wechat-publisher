@@ -1,134 +1,788 @@
+/* ============================================================
+   WeChat Publisher — Preview View (Option B hi-fi)
+   Uses Obsidian native CSS vars; light/dark handled by host.
+============================================================ */
+
 .wechat-publisher-view {
+  --wp-accent: var(--interactive-accent);
+  --wp-accent-hover: var(--interactive-accent-hover, var(--interactive-accent));
+  --wp-shadow-s: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --wp-shadow-m: 0 4px 14px rgba(0, 0, 0, 0.08);
+  --wp-radius-s: 4px;
+  --wp-radius-m: 6px;
+  --wp-radius-l: 8px;
+
   height: 100%;
-  padding: 12px;
-  background: linear-gradient(180deg, #f6f8fb 0%, #ffffff 180px);
+  padding: 0;
+  background: var(--background-primary);
   display: flex;
   flex-direction: column;
 }
 
-.wechat-publisher-collapse-bar {
+.theme-dark .wechat-publisher-view {
+  --wp-shadow-s: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --wp-shadow-m: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================================
+   Toolbar (single row)
+============================================================ */
+
+.wp-toolbar {
   display: flex;
-  gap: 8px;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.wechat-publisher-collapse-bar button {
-  padding: 4px 10px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 10px;
+  gap: 8px;
+  padding: 8px 12px;
+  min-height: 48px;
   background: var(--background-primary);
-  font-size: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 5;
 }
 
-
-.wechat-publisher-toolbar {
+/* Meta card (left-most, clickable) */
+.wp-meta {
   display: flex;
-  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 4px 8px 4px 6px;
+  border-radius: var(--wp-radius-m);
+  cursor: pointer;
+  transition: background 0.12s;
 }
 
-.wechat-publisher-toolbar select,
-.wechat-publisher-form input,
-.wechat-publisher-toolbar button {
+.wp-meta:hover {
+  background: var(--background-modifier-hover);
+}
+
+.wp-cover {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--wp-radius-s);
+  background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 10px;
-  background: var(--background-primary);
-}
-
-.wechat-publisher-toolbar button {
-  padding: 6px 12px;
-}
-
-.wechat-publisher-form {
+  overflow: hidden;
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 12px;
-  margin-bottom: 12px;
-  padding: 12px;
-  border: 1px solid rgba(15, 76, 129, 0.1);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
+  place-items: center;
+  color: var(--text-faint);
+  font-size: 14px;
 }
 
-.wechat-publisher-form-group {
+.wp-cover.has-image {
+  background: var(--background-primary);
+  border-color: var(--background-modifier-border);
+}
+
+.wp-cover.empty::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.wp-cover svg {
+  width: 14px;
+  height: 14px;
+}
+
+.wp-cover .wp-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wp-meta-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.wp-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-height: 2.6em;
+}
+
+.wp-title.untitled {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.wp-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.wechat-publisher-form-group--wide {
-  grid-column: 1 / -1;
+.wp-sub .sep {
+  opacity: 0.5;
 }
 
-.wechat-publisher-form label {
-  font-size: 12px;
+.wp-sub .edit-hint {
+  color: var(--wp-accent);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.wp-meta:hover .edit-hint {
+  opacity: 1;
+}
+
+.wp-caret {
+  color: var(--text-faint);
+  flex-shrink: 0;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Icon buttons */
+.wp-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: var(--wp-radius-s);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.wp-icon-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  box-shadow: none;
+}
+
+.wp-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.wp-icon-btn.has-badge::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-orange, #e08e3c);
+  border: 1.5px solid var(--background-primary);
+}
+
+.wp-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--background-modifier-border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* Primary publish button */
+.wp-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--wp-accent);
+  color: var(--text-on-accent, #fff);
+  border: none;
+  border-radius: var(--wp-radius-m);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: none;
+  transition: background 0.12s;
+}
+
+.wp-primary:hover {
+  background: var(--wp-accent-hover);
+  color: var(--text-on-accent, #fff);
+  box-shadow: none;
+}
+
+.wp-primary svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Account pill */
+.wp-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  font-size: 12.5px;
+  color: var(--text-normal);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: none;
+  transition: background 0.12s, border-color 0.12s;
+  max-width: 180px;
+}
+
+.wp-account:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--text-faint);
+  box-shadow: none;
+}
+
+.wp-account-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.wp-account-caret {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.wp-account-caret svg {
+  width: 10px;
+  height: 10px;
+}
+
+.wp-account-status {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-faint);
+}
+
+.wp-account-status.active {
+  background: var(--color-green, #0aa05f);
+}
+
+.wp-account-status.warn {
+  background: var(--color-orange, #e08e3c);
+}
+
+.wp-account-status.none {
+  background: var(--text-faint);
+}
+
+/* Theme / layout pill — same style language as wp-account */
+.wp-theme-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  font-size: 12.5px;
+  color: var(--text-normal);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: none;
+  transition: background 0.12s, border-color 0.12s;
+  max-width: 160px;
+}
+
+.wp-theme-pill:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--text-faint);
+  box-shadow: none;
+}
+
+.wp-theme-pill-icon {
+  display: inline-flex;
+  align-items: center;
   color: var(--text-muted);
 }
 
-.wechat-publisher-form input {
-  min-height: 34px;
+.wp-theme-pill-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.wp-theme-pill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 96px;
+}
+
+/* ============================================================
+   Popover menus (account / more)
+============================================================ */
+
+.wp-menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.wp-menu,
+.wp-account-menu,
+.wp-theme-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  max-width: calc(100vw - 24px);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--wp-radius-l);
+  box-shadow: var(--wp-shadow-m);
+  padding: 4px;
+  z-index: 50;
+  font-size: 13px;
+}
+
+.wp-account-menu {
+  min-width: 240px;
+}
+
+.wp-theme-menu {
+  min-width: 280px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.wp-theme-section-header {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  padding: 8px 10px 4px;
+  font-weight: 600;
+}
+
+.wp-theme-menu-item {
+  align-items: flex-start;
   padding: 6px 10px;
-}
-
-.wechat-publisher-form button {
-  align-self: end;
-  min-height: 34px;
-  padding: 6px 12px;
-  border: 1px solid var(--interactive-accent);
-  border-radius: 10px;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-}
-
-.wechat-publisher-cover-actions {
-  display: flex;
   gap: 8px;
 }
 
-.wechat-publisher-cover-actions button {
-  min-height: 32px;
-  padding: 6px 10px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 10px;
-  background: var(--background-primary);
+.wp-theme-menu-item.locked {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.wp-theme-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.wp-theme-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.3;
+}
+
+.wp-theme-item-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.wp-badge-pro {
+  font-size: 9.5px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(124, 109, 242, 0.15);
+  color: var(--wp-accent);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.wp-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--wp-radius-s);
+  cursor: pointer;
   color: var(--text-normal);
 }
 
-.wechat-publisher-meta {
-  margin-bottom: 12px;
+.wp-menu-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.wp-menu-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.wp-menu-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.wp-menu-text {
+  flex: 1;
+}
+
+.wp-menu-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wp-menu-sep {
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin: 4px 2px;
+}
+
+.wp-badge-warn {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(224, 142, 60, 0.15);
+  color: var(--color-orange, #e08e3c);
+  font-weight: 500;
+}
+
+/* Account menu items */
+.wp-account-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--wp-radius-s);
+  cursor: pointer;
+}
+
+.wp-account-item:hover,
+.wp-account-item.current {
+  background: var(--background-modifier-hover);
+}
+
+.wp-account-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c6df2, #4b8ef5);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.wp-account-item.acc-2 .wp-account-avatar {
+  background: linear-gradient(135deg, #0aa05f, #26c281);
+}
+
+.wp-account-item.acc-3 .wp-account-avatar {
+  background: linear-gradient(135deg, #e08e3c, #f0a857);
+}
+
+.wp-account-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.wp-account-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wp-account-item-status {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+}
+
+.wp-account-item-dot {
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.wp-account-item-check {
+  color: var(--wp-accent);
+  display: inline-flex;
+  align-items: center;
+}
+
+.wp-account-empty {
+  padding: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ============================================================
+   Drawer — title / author / cover
+============================================================ */
+
+.wp-drawer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-column-gap: 12px;
+  grid-row-gap: 10px;
+  padding: 0 14px;
+  max-height: 0;
+  overflow: hidden;
+  background: var(--background-primary-alt, var(--background-secondary));
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+  transition: max-height 0.22s ease, padding-top 0.22s ease, padding-bottom 0.22s ease;
+}
+
+.wp-drawer.open {
+  max-height: 320px;
+  padding-top: 14px;
+  padding-bottom: 16px;
+}
+
+.wp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.wp-field.wide {
+  grid-column: 1 / -1;
+}
+
+.wp-field-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 500;
+}
+
+.wp-input {
+  padding: 7px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--wp-radius-m);
+  background: var(--background-modifier-form-field, var(--background-primary));
+  color: var(--text-normal);
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.wp-input:focus {
+  border-color: var(--wp-accent);
+}
+
+.wp-input::placeholder {
+  color: var(--text-faint);
+}
+
+/* Cover row */
+.wp-cover-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.wp-cover-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--wp-radius-m);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
+  display: grid;
+  place-items: center;
+}
+
+.wp-cover-thumb.has-image {
+  border-color: var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.wp-cover-thumb.empty {
+  border-style: dashed;
+}
+
+.wp-cover-thumb svg {
+  width: 24px;
+  height: 24px;
+}
+
+.wp-cover-thumb .wp-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wp-cover-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wp-cover-input {
   font-size: 12px;
 }
 
-.wechat-publisher-preview {
+.wp-cover-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wp-btn-ghost {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  border-radius: var(--wp-radius-m);
+  font-size: 12.5px;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.wp-btn-ghost:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--text-faint);
+  box-shadow: none;
+}
+
+.wp-btn-ghost.danger:hover {
+  color: var(--color-red, #e05555);
+  border-color: var(--color-red, #e05555);
+}
+
+/* ============================================================
+   Toolbar-hidden handle (click to show toolbar again)
+============================================================ */
+
+.wp-toolbar-hidden-handle {
+  align-self: center;
+  padding: 4px 12px;
+  margin: 6px auto 0;
+  border-radius: 0 0 var(--wp-radius-m) var(--wp-radius-m);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-top: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.wp-toolbar-hidden-handle:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.wechat-publisher-view--toolbar-hidden .wp-toolbar-hidden-handle {
+  display: inline-block;
+}
+
+/* ============================================================
+   Status meta line + preview container
+============================================================ */
+
+.wp-status {
+  padding: 6px 16px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wp-preview-wrap {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 18px;
-  border: 1px solid rgba(15, 76, 129, 0.12);
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(15, 76, 129, 0.08);
+  padding: 28px 24px 60px;
+  background: var(--background-primary);
 }
 
-.wechat-publisher-article {
+.wp-article {
   max-width: 760px;
   margin: 0 auto;
 }
 
-.wechat-publisher-empty {
+.wp-empty {
   display: grid;
   place-items: center;
   min-height: 240px;
   border: 1px dashed var(--background-modifier-border);
-  border-radius: 16px;
+  border-radius: var(--wp-radius-l);
   color: var(--text-muted);
   text-align: center;
   padding: 24px;
 }
+
+/* ============================================================
+   Legacy backward-compat shims
+   (Some settings / modal code still references old classes.)
+============================================================ */
 
 .wechat-publisher-settings-note {
   margin-bottom: 20px;
@@ -193,7 +847,6 @@
   font-size: 0.92em;
 }
 
-/* 账号激活状态标签 */
 .wechat-publisher-account-badge {
   display: inline-block;
   margin-left: 8px;
@@ -214,7 +867,6 @@
   color: var(--text-muted);
 }
 
-/* 激活页账号列表卡片 */
 .wechat-publisher-activate-account-list {
   display: flex;
   flex-direction: column;
@@ -253,7 +905,6 @@
   margin-top: 2px;
 }
 
-/* 账号配置 Tab 行 */
 .wechat-publisher-account-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -290,7 +941,6 @@
   text-overflow: ellipsis;
 }
 
-/* 授权状态简洁文字 */
 .wechat-publisher-license-status--active {
   color: #07c160 !important;
 }
@@ -303,7 +953,6 @@
   color: var(--text-muted) !important;
 }
 
-/* 粘贴导入区域 */
 .wechat-publisher-paste-import {
   margin: 8px 0;
   padding: 14px 16px;
@@ -395,11 +1044,13 @@
   background: rgba(255, 255, 255, 0.65);
 }
 
-@media (max-width: 900px) {
-  .wechat-publisher-form {
+@media (max-width: 560px) {
+  .wp-drawer {
     grid-template-columns: 1fr;
   }
+}
 
+@media (max-width: 900px) {
   .wechat-publisher-slider-setting .setting-item-control {
     flex-wrap: wrap;
     justify-content: flex-start;
