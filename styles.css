@@ -805,6 +805,98 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 252, 0.92));
 }
 
+.wechat-publisher-about__intro {
+  margin: 0 0 8px;
+  font-size: 0.96em;
+  line-height: 1.6;
+  color: var(--text-normal);
+}
+
+.wechat-publisher-about__version {
+  margin-bottom: 16px;
+  font-size: 0.86em;
+  color: var(--text-muted);
+}
+
+.wechat-publisher-about__card {
+  margin: 12px 0 18px;
+  padding: 16px;
+  border: 1px solid rgba(15, 76, 129, 0.14);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 252, 0.92));
+  text-align: center;
+}
+
+.wechat-publisher-about__card-title {
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.wechat-publisher-about__profile {
+  display: block;
+  margin: 0 auto 10px;
+  max-width: 260px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.wechat-publisher-about__card-hint {
+  margin-top: 4px;
+  font-size: 0.88em;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.wechat-publisher-about__terms {
+  margin: 12px 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+}
+
+.wechat-publisher-about__terms-title {
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.wechat-publisher-about__terms-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-normal);
+  line-height: 1.7;
+}
+
+.wechat-publisher-about__links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.wechat-publisher-about__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  color: var(--text-normal);
+  text-decoration: none;
+  font-size: 0.9em;
+  background: var(--background-primary);
+  cursor: pointer;
+}
+
+.wechat-publisher-about__link:hover {
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
 .wechat-publisher-purchase-card__line {
   margin-bottom: 6px;
   color: var(--text-normal);
