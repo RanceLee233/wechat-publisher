@@ -1,7 +1,7 @@
 {
   "id": "wechat-publisher",
   "name": "WeChat Publisher",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "minAppVersion": "1.5.0",
   "description": "微信公众号发布工具 | Publish WeChat Official Account articles with formatting, image upload, and draft push.",
   "author": "RanceLee",
