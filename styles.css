@@ -1136,6 +1136,15 @@
   background: rgba(255, 255, 255, 0.65);
 }
 
+.wxp-mermaid-obsidian-render {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  visibility: hidden;
+  width: 800px;
+  pointer-events: none;
+}
+
 @media (max-width: 560px) {
   .wp-drawer {
     grid-template-columns: 1fr;
