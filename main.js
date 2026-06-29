@@ -232276,7 +232276,7 @@ var WeChatPublisherSettingTab = class extends import_obsidian5.PluginSettingTab 
       cls: "wechat-publisher-settings-note",
       text: "\u672C\u63D2\u4EF6\u4E2A\u4EBA\u4F7F\u7528\u514D\u8D39\u3002\u8D26\u53F7\u4FE1\u606F\u53EA\u4FDD\u5B58\u5728\u672C\u5730\u3002"
     });
-    new import_obsidian5.Setting(containerEl).setName("\u5173\u4E8E\u4E0E\u8054\u7CFB").setDesc("\u67E5\u770B\u7248\u672C\u4FE1\u606F\u3001\u516C\u4F17\u53F7\u540D\u7247\u4E0E\u4F7F\u7528\u6761\u6B3E\u3002").addButton((button) => {
+    new import_obsidian5.Setting(containerEl).setName("\u5173\u4E8E\u4E0E\u8054\u7CFB").setDesc("\u67E5\u770B\u4F5C\u8005\u4ECB\u7ECD\u3001GitHub\u3001\u535A\u5BA2\u3001\u516C\u4F17\u53F7\u540D\u7247\u4E0E\u4F7F\u7528\u6761\u6B3E\u3002").addButton((button) => {
       button.setButtonText("\u5173\u4E8E WeChat Publisher");
       button.setCta();
       button.onClick(() => {
@@ -232514,8 +232514,11 @@ var AboutModal = class extends import_obsidian6.Modal {
     });
     profileCard.createEl("div", {
       cls: "wechat-publisher-about__card-hint",
-      text: "\u540C\u6B65\u66F4\u65B0 Obsidian \u6559\u7A0B\u3001\u5199\u4F5C\u6280\u5DE7\u4E0E\u8FD9\u4E2A\u63D2\u4EF6\u7684\u6700\u65B0\u52A8\u6001\u3002"
+      text: "\u6211\u957F\u671F\u5206\u4EAB Obsidian \u6559\u7A0B\u3001AI \u5B9E\u8DF5\u4E0E\u6548\u7387\u5DE5\u5177\uFF0C\u4E5F\u63D0\u4F9B\u7CFB\u7EDF\u5316 Obsidian \u6559\u7A0B\u548C\u5F00\u7BB1\u5373\u7528\u7684\u9884\u8BBE\u4ED3\u5E93\u3002\u6B22\u8FCE\u901A\u8FC7\u4F5C\u8005\u535A\u5BA2\u4E86\u89E3\u66F4\u591A\u5185\u5BB9\uFF0C\u6216\u5728 GitHub \u67E5\u770B\u6211\u7684\u5F00\u6E90\u9879\u76EE\u3002"
     });
+    const authorLinksEl = profileCard.createDiv({ cls: "wechat-publisher-about__author-links" });
+    this.appendAddress(authorLinksEl, "GitHub", "github.com/RanceLee233/wechat-publisher", GITHUB_URL);
+    this.appendAddress(authorLinksEl, "\u535A\u5BA2", "blog.discoverlabs.ac.cn", BLOG_URL);
     const feedbackCard = contentEl.createDiv({
       cls: "wechat-publisher-about__card wechat-publisher-about__feedback"
     });
@@ -232569,6 +232572,22 @@ var AboutModal = class extends import_obsidian6.Modal {
       }
     });
     btn.addEventListener("click", (event3) => {
+      event3.preventDefault();
+      this.plugin.openExternalUrl(url);
+    });
+  }
+  appendAddress(parent5, label, address, url) {
+    const rowEl = parent5.createDiv({ cls: "wechat-publisher-about__author-link" });
+    rowEl.createSpan({ cls: "wechat-publisher-about__author-label", text: `${label}\uFF1A` });
+    const linkEl = rowEl.createEl("a", {
+      text: address,
+      attr: {
+        href: url,
+        target: "_blank",
+        rel: "noopener noreferrer"
+      }
+    });
+    linkEl.addEventListener("click", (event3) => {
       event3.preventDefault();
       this.plugin.openExternalUrl(url);
     });
@@ -233254,8 +233273,12 @@ function extractHtmlImageRefs(html5) {
   }
   return refs;
 }
-function extractFirstHtmlImageUrl(html5) {
-  return extractHtmlImageRefs(html5)[0]?.src ?? null;
+function extractFirstHtmlImageCoverSource(html5) {
+  const firstImage = extractHtmlImageRefs(html5)[0];
+  if (!firstImage) {
+    return null;
+  }
+  return firstImage.originalSource ?? lookupOriginalAssetSource(firstImage.src) ?? firstImage.src;
 }
 function parseDataUrl(dataUrl) {
   if (!dataUrl.startsWith("data:")) {
@@ -234349,7 +234372,7 @@ async function publishDraftToWechat(input) {
   if (!thumbMediaId) {
     const frontmatterCover = typeof input.frontmatter.cover === "string" && input.frontmatter.cover.trim() ? input.frontmatter.cover.trim() : "";
     const defaultCoverPath = input.account.defaultCoverPath?.trim() ?? "";
-    const firstHtmlImageUrl = extractFirstHtmlImageUrl(input.html) ?? "";
+    const firstHtmlImageUrl = extractFirstHtmlImageCoverSource(input.html) ?? "";
     const coverUrl = frontmatterCover || defaultCoverPath || firstHtmlImageUrl || PLACEHOLDER_PNG_DATA_URL;
     input.onProgress?.("\u6B63\u5728\u4E0A\u4F20\u5C01\u9762\u56FE...");
     let coverAsset;
