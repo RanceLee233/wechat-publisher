@@ -1,16 +1,18 @@
 # WeChat Publisher
 
-> **Write in Obsidian, publish to WeChat Official Account (微信公众号).**
+> **Send articles from Obsidian to the WeChat Official Account draft box.**
 >
-> WeChat Publisher renders your Markdown notes into WeChat-compatible HTML with proper formatting — code highlighting, math formulas, Mermaid diagrams, local image upload, and one-click draft push to your Official Account. **Free for personal use**, please don't use it for commercial purposes.
+> WeChat Publisher converts articles written in Obsidian into WeChat-compatible content and submits them to the Official Account draft box. It handles formatting and image preparation; you review and publish the draft in WeChat. **Free for personal use**, please don't use it for commercial purposes.
 >
 > 👇 中文文档见下方
 
 ---
 
-**在 Obsidian 里写作，一键发布到微信公众号。**
+**把 Obsidian 文章传输到微信公众号草稿箱。**
 
-WeChat Publisher 是一个 Obsidian 插件，让你在熟悉的写作环境里完成公众号排版，无需离开 Obsidian 就能发布。
+WeChat Publisher 是一个 Obsidian 插件，核心用途是把你写好的文章从 Obsidian 转换成适合微信公众号的内容，并传输到公众号草稿箱。你仍然负责文章内容、审核和最终发布。
+
+它不是 AI 写作、AI 配图或全自动发布工具：不会替你写文章、生成配图，也不会绕过公众号后台自动群发。
 
 **个人使用完全免费**，全部能力直接解锁，无需激活码。
 
@@ -34,12 +36,12 @@ Obsidian交流聊天反馈群：https://blog.discoverlabs.ac.cn/posts/0000-obsid
 
 ## 简介
 
-很多人用 Obsidian 写公众号文章，但发布时总绕不开一个麻烦：Markdown 渲染后的样式在微信编辑器里根本不对，代码块、标题、图片全乱，还要手动重排。
+很多人用 Obsidian 写公众号文章，但把成稿传到公众号时总绕不开一个麻烦：Markdown 渲染后的样式在微信编辑器里容易错乱，代码块、标题和图片还要手动重排。
 
-WeChat Publisher 解决的就是这个问题。它在 Obsidian 侧边栏直接预览微信排版效果，支持：
+WeChat Publisher 只解决这段传输和格式适配：在 Obsidian 侧边栏预览微信排版，处理文章内容后提交到公众号草稿箱，支持：
 
-- **格式预览 + 复制 HTML**：一键跳转公众号后台粘贴，全程不需要填写任何账号信息
-- **直连公众号 API**：配置 AppID/AppSecret 后，直接从 Obsidian 推送到草稿箱，无需打开浏览器
+- **格式预览 + 复制 HTML**：检查文章在微信中的排版，或手动粘贴到公众号编辑器
+- **直连公众号 API**：配置 AppID/AppSecret 后，直接从 Obsidian 提交到草稿箱
 
 **支持的 Markdown 格式：**
 
@@ -80,7 +82,7 @@ WeChat Publisher 解决的就是这个问题。它在 Obsidian 侧边栏直接�
 | 复制 HTML | 一键粘贴到公众号编辑器 |
 | 跳转公众号平台 | 一键打开 mp.weixin.qq.com |
 | 账号配置 · 直连公众号 API | 填入 AppID/AppSecret 后直连 |
-| 发布到草稿箱 | 无需打开浏览器，一键推送 |
+| 传输到草稿箱 | 直连微信公众号 API 提交草稿，最终发布仍在公众号后台完成 |
 | 封面系统 | 自动设置封面，支持账号默认封面 |
 | 多账号切换 | 同时管理多个公众号 |
 
