@@ -233227,6 +233227,9 @@ var IMAGE_EXTENSIONS2 = /* @__PURE__ */ new Map([
 function normalizeLookupKey2(value2) {
   return value2.trim().toLowerCase();
 }
+function imageReferenceKey(src, originalSource) {
+  return `${src}::${originalSource ?? ""}`;
+}
 function extractHtmlImageRefs(html5) {
   if (typeof DOMParser !== "undefined") {
     try {
@@ -233239,7 +233242,7 @@ function extractHtmlImageRefs(html5) {
           continue;
         }
         const originalSource = image.getAttribute("data-wxp-source")?.trim() || void 0;
-        const key = `${src}::${originalSource ?? ""}`;
+        const key = imageReferenceKey(src, originalSource);
         if (seen2.has(key)) {
           continue;
         }
@@ -233261,7 +233264,7 @@ function extractHtmlImageRefs(html5) {
     const tag2 = match2[0];
     const src = match2[1];
     const originalSource = tag2.match(/\bdata-wxp-source="([^"]+)"/)?.[1];
-    const key = `${src}::${originalSource ?? ""}`;
+    const key = imageReferenceKey(src, originalSource);
     if (seen.has(key)) {
       continue;
     }
@@ -234201,6 +234204,10 @@ async function rehostArticleImages(app, file, html5, accessToken, onProgress) {
   const document2 = new DOMParser().parseFromString(html5, "text/html");
   const imageElements = Array.from(document2.querySelectorAll("img"));
   const refs = extractHtmlImageRefs(html5);
+  const refByKey = new Map(
+    refs.map((ref) => [imageReferenceKey(ref.src, ref.originalSource), ref])
+  );
+  const uploadedUrlByKey = /* @__PURE__ */ new Map();
   console.debug(
     "[WeChat Publisher] \u53D1\u5E03\u524D\u56FE\u7247\u6E05\u5355",
     refs.map((ref, index2) => ({
@@ -234211,15 +234218,27 @@ async function rehostArticleImages(app, file, html5, accessToken, onProgress) {
     }))
   );
   if (imageElements.length !== refs.length) {
-    console.warn("[WeChat Publisher] \u56FE\u7247\u8282\u70B9\u6570\u91CF\u4E0E\u63D0\u53D6\u7ED3\u679C\u4E0D\u4E00\u81F4", {
+    console.debug("[WeChat Publisher] \u6B63\u6587\u5B58\u5728\u91CD\u590D\u56FE\u7247\uFF0C\u5C06\u590D\u7528\u540C\u4E00\u4E0A\u4F20\u7ED3\u679C", {
       imageElementCount: imageElements.length,
-      refCount: refs.length
+      uniqueRefCount: refs.length
     });
   }
-  for (const [index2, ref] of refs.entries()) {
-    onProgress?.(`\u6B63\u5728\u4E0A\u4F20\u6B63\u6587\u56FE\u7247 ${index2 + 1}/${refs.length}...`);
-    let asset;
+  for (const [index2, image] of imageElements.entries()) {
+    const src = image.getAttribute("src")?.trim() ?? "";
+    if (!src) {
+      continue;
+    }
+    const originalSource = image.getAttribute("data-wxp-source")?.trim() || void 0;
+    const key = imageReferenceKey(src, originalSource);
+    const cachedUrl = uploadedUrlByKey.get(key);
+    if (cachedUrl) {
+      image.setAttribute("src", cachedUrl);
+      continue;
+    }
+    const ref = refByKey.get(key) ?? { src, originalSource };
     const mappedSource = ref.src.startsWith("data:") ? lookupOriginalAssetSource(ref.src) : null;
+    onProgress?.(`\u6B63\u5728\u4E0A\u4F20\u6B63\u6587\u56FE\u7247 ${index2 + 1}/${imageElements.length}...`);
+    let asset;
     try {
       asset = await resolveArticleImageAsset(app, file, ref.originalSource ?? ref.src);
     } catch (error3) {
@@ -234235,7 +234254,20 @@ async function rehostArticleImages(app, file, html5, accessToken, onProgress) {
         `\u7B2C ${index2 + 1} \u5F20\u6B63\u6587\u56FE\u7247\u4E0A\u4F20\u5931\u8D25\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u6765\u6E90\uFF1A${(ref.originalSource ?? ref.src).slice(0, 120)}${ref.originalSource ? `\uFF1B\u539F\u59CB\u6765\u6E90\uFF1A${ref.originalSource.slice(0, 120)}` : ""}${mappedSource ? `\uFF1B\u6620\u5C04\u6765\u6E90\uFF1A${mappedSource.slice(0, 120)}` : ""}`
       );
     }
-    imageElements[index2]?.setAttribute("src", wechatUrl);
+    uploadedUrlByKey.set(key, wechatUrl);
+    image.setAttribute("src", wechatUrl);
+  }
+  const unreplaced = imageElements.find(
+    (image) => {
+      const src = image.getAttribute("src")?.trim() ?? "";
+      return src !== "" && !/^https?:\/\/mmbiz\.qpic\.cn\//i.test(src);
+    }
+  );
+  if (unreplaced) {
+    const unreplacedIndex = imageElements.indexOf(unreplaced);
+    throw new Error(
+      `\u7B2C ${unreplacedIndex + 1} \u5F20\u6B63\u6587\u56FE\u7247\u672A\u5B8C\u6210\u5FAE\u4FE1\u56FE\u5E8A\u66FF\u6362\uFF0C\u8BF7\u68C0\u67E5\u56FE\u7247\u6765\u6E90\u540E\u91CD\u8BD5\uFF1B\u5F53\u524D\u5730\u5740\uFF1A${(unreplaced.getAttribute("src") ?? "").slice(0, 160)}`
+    );
   }
   const nextHtml = document2.body.innerHTML;
   return {
