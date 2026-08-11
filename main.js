@@ -230278,6 +230278,7 @@ function cloneDraftRecords(draftRecords) {
   ).map((record) => ({
     notePath: String(record.notePath),
     accountId: String(record.accountId),
+    articleType: record.articleType === "newspic" ? "newspic" : "news",
     mediaId: String(record.mediaId),
     title: typeof record.title === "string" ? record.title : "",
     updatedAt: typeof record.updatedAt === "string" && record.updatedAt ? record.updatedAt : (/* @__PURE__ */ new Date()).toISOString()
@@ -231208,6 +231209,275 @@ async function replaceAsync(input, pattern, replacer) {
   return output2;
 }
 
+// src/newspic-note.ts
+var FIELD_LABELS = {
+  title: "\u6807\u9898",
+  cover: "\u5C01\u9762",
+  images: "\u8D34\u56FE",
+  content: "\u6B63\u6587"
+};
+var FIELD_BY_LABEL = /* @__PURE__ */ new Map([
+  ["\u6807\u9898", "title"],
+  ["\u5C01\u9762", "cover"],
+  ["\u8D34\u56FE", "images"],
+  ["\u6B63\u6587", "content"]
+]);
+var FIELD_ORDER = ["title", "cover", "images", "content"];
+var FIELD_MARKER_PATTERN = /^##[ \t]+(标题|封面|贴图|正文)\s*[：:][ \t]*(.*)$/;
+var FRONTMATTER_PATTERN = /^\uFEFF?---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+var NEWSPIC_NOTE_TEMPLATE = `---
+wechat-type: \u8D34\u56FE
+---
+
+## \u6807\u9898\uFF1A
+
+## \u5C01\u9762\uFF1A
+
+## \u8D34\u56FE\uFF1A
+
+## \u6B63\u6587\uFF1A
+`;
+function isNewspicNote(frontmatter, markdown2) {
+  const cachedValue = frontmatter?.["wechat-type"];
+  if (isNewspicTypeValue(cachedValue)) {
+    return true;
+  }
+  const frontmatterMatch = markdown2.match(FRONTMATTER_PATTERN);
+  if (!frontmatterMatch) {
+    return false;
+  }
+  const typeLine = frontmatterMatch[1].split(/\r?\n/).map((line2) => line2.match(/^\s*wechat-type\s*:\s*(.*?)\s*$/)?.[1] ?? "").find(Boolean);
+  return isNewspicTypeValue(typeLine);
+}
+function parseNewspicNote(markdown2) {
+  const issues = [];
+  const body = stripFrontmatter2(markdown2).replace(/\r\n?/g, "\n");
+  const lines = body.split("\n");
+  const markers3 = findFieldMarkers(lines);
+  const markerByField = /* @__PURE__ */ new Map();
+  for (const marker of markers3) {
+    if (markerByField.has(marker.field)) {
+      issues.push({
+        code: `duplicate-${marker.field}`,
+        message: `\u68C0\u6D4B\u5230\u591A\u4E2A\u201C## ${marker.label}\uFF1A\u201D\u5B57\u6BB5\uFF0C\u8BF7\u53EA\u4FDD\u7559\u4E00\u4E2A\u3002`
+      });
+      continue;
+    }
+    markerByField.set(marker.field, marker);
+  }
+  for (const field of FIELD_ORDER) {
+    if (!markerByField.has(field)) {
+      issues.push({
+        code: `missing-${field}`,
+        message: `\u672A\u627E\u5230\u201C## ${FIELD_LABELS[field]}\uFF1A\u201D\u5B57\u6BB5\uFF0C\u8BF7\u4F7F\u7528\u201C\u65B0\u5EFA\u8D34\u56FE\u201D\u751F\u6210\u7684\u6807\u51C6\u683C\u5F0F\u3002`
+      });
+    }
+  }
+  const presentOrder = markers3.filter((marker, index2) => markers3.findIndex((item) => item.field === marker.field) === index2).map((marker) => marker.field);
+  const expectedPresentOrder = FIELD_ORDER.filter((field) => markerByField.has(field));
+  if (presentOrder.join("|") !== expectedPresentOrder.join("|")) {
+    issues.push({
+      code: "invalid-field-order",
+      message: "\u8D34\u56FE\u5B57\u6BB5\u987A\u5E8F\u5FC5\u987B\u4E3A\uFF1A\u6807\u9898 \u2192 \u5C01\u9762 \u2192 \u8D34\u56FE \u2192 \u6B63\u6587\uFF0C\u4E14\u6B63\u6587\u5FC5\u987B\u653E\u5728\u6700\u540E\u3002"
+    });
+  }
+  const titleMarker = markerByField.get("title");
+  const coverMarker = markerByField.get("cover");
+  const imagesMarker = markerByField.get("images");
+  const contentMarker = markerByField.get("content");
+  const title2 = titleMarker?.inlineValue.trim() ?? "";
+  const titleSection = readSection(lines, titleMarker, markers3);
+  const coverSection = readSection(lines, coverMarker, markers3);
+  const gallerySection = readSection(lines, imagesMarker, markers3);
+  const contentSection = readSection(lines, contentMarker, markers3, true);
+  const coverMarkdown = joinInlineValueAndSection(coverMarker, coverSection);
+  const galleryMarkdown = joinInlineValueAndSection(imagesMarker, gallerySection);
+  const contentMarkdown = contentMarker ? [contentMarker.inlineValue, contentSection].filter(Boolean).join("\n\n").trim() : "";
+  const coverImages = extractImageReferences(coverMarkdown);
+  const galleryImages = extractImageReferences(galleryMarkdown);
+  const contentImages = extractImageReferences(contentMarkdown);
+  const images = [...coverImages, ...galleryImages];
+  if (!title2) {
+    issues.push({
+      code: "empty-title",
+      message: "\u8BF7\u5728\u201C## \u6807\u9898\uFF1A\u201D\u5192\u53F7\u540E\u586B\u5199\u8D34\u56FE\u6807\u9898\u3002"
+    });
+  } else if (Array.from(title2).length > 32) {
+    issues.push({
+      code: "title-too-long",
+      message: `\u8D34\u56FE\u6807\u9898\u5171 ${Array.from(title2).length} \u5B57\uFF0C\u5FAE\u4FE1\u6700\u591A\u652F\u6301 32 \u5B57\uFF0C\u8BF7\u7F29\u77ED\u540E\u91CD\u8BD5\u3002`
+    });
+  }
+  if (stripNonVisibleMarkup(titleSection).trim()) {
+    issues.push({
+      code: "title-content-outside-marker",
+      message: "\u6807\u9898\u8BF7\u76F4\u63A5\u5199\u5728\u201C## \u6807\u9898\uFF1A\u201D\u5192\u53F7\u540E\uFF0C\u4E0D\u8981\u53E6\u8D77\u4E00\u884C\u3002"
+    });
+  }
+  if (coverImages.length === 0) {
+    issues.push({
+      code: "missing-cover",
+      message: "\u8BF7\u5728\u201C## \u5C01\u9762\uFF1A\u201D\u4E0B\u65B9\u653E\u5165\u4E00\u5F20\u56FE\u7247\u3002"
+    });
+  } else if (coverImages.length > 1) {
+    issues.push({
+      code: "multiple-covers",
+      message: `\u5C01\u9762\u533A\u57DF\u68C0\u6D4B\u5230 ${coverImages.length} \u5F20\u56FE\u7247\uFF0C\u53EA\u80FD\u4FDD\u7559 1 \u5F20\u3002`
+    });
+  }
+  if (stripImageTokensAndListMarkers(coverMarkdown).trim()) {
+    issues.push({
+      code: "cover-has-text",
+      message: "\u5C01\u9762\u533A\u57DF\u53EA\u7528\u4E8E\u653E\u7F6E\u4E00\u5F20\u56FE\u7247\uFF0C\u8BF4\u660E\u6587\u5B57\u8BF7\u79FB\u5230\u201C## \u6B63\u6587\uFF1A\u201D\u533A\u57DF\u3002"
+    });
+  }
+  if (stripImageTokensAndListMarkers(galleryMarkdown).trim()) {
+    issues.push({
+      code: "gallery-has-text",
+      message: "\u8D34\u56FE\u533A\u57DF\u53EA\u7528\u4E8E\u653E\u7F6E\u56FE\u7247\uFF0C\u8BF4\u660E\u6587\u5B57\u8BF7\u79FB\u5230\u201C## \u6B63\u6587\uFF1A\u201D\u533A\u57DF\u3002"
+    });
+  }
+  if (contentImages.length > 0) {
+    issues.push({
+      code: "content-has-images",
+      message: `\u6B63\u6587\u533A\u57DF\u53D1\u73B0 ${contentImages.length} \u5F20\u56FE\u7247\uFF0C\u8BF7\u5C06\u5B83\u4EEC\u79FB\u5230\u201C## \u8D34\u56FE\uFF1A\u201D\u533A\u57DF\uFF0C\u907F\u514D\u53D1\u5E03\u65F6\u9057\u6F0F\u3002`
+    });
+  }
+  if (images.length > 20) {
+    issues.push({
+      code: "too-many-images",
+      message: `\u5171\u68C0\u6D4B\u5230 ${images.length} \u5F20\u56FE\u7247\uFF08\u5C01\u9762 ${coverImages.length} \u5F20\u3001\u8D34\u56FE ${galleryImages.length} \u5F20\uFF09\uFF0C\u5FAE\u4FE1\u8D34\u56FE\u6700\u591A\u652F\u6301 20 \u5F20\u3002\u8BF7\u81F3\u5C11\u5220\u9664 ${images.length - 20} \u5F20\u56FE\u7247\u540E\u91CD\u8BD5\u3002`
+    });
+  }
+  return {
+    title: title2,
+    coverImages,
+    galleryImages,
+    images,
+    contentMarkdown,
+    contentText: markdownToPlainText(contentMarkdown),
+    issues: dedupeIssues(issues)
+  };
+}
+function markdownToPlainText(markdown2) {
+  return stripImageTokens(markdown2).replace(/%%[\s\S]*?%%/g, "").replace(/<!--([\s\S]*?)-->/g, "").replace(/^[ \t]*(```+|~~~+).*$/gm, "").replace(/<br\s*\/?\s*>/gi, "\n").replace(/<[^>]+>/g, "").replace(/\[([^\]\n]+)\]\((?:<[^>\n]+>|[^)\n]+)\)/g, "$1").replace(/\[\[([^\]|\n]+)\|([^\]\n]+)\]\]/g, "$2").replace(/\[\[([^\]\n]+)\]\]/g, "$1").replace(/^[ \t]{0,3}#{1,6}[ \t]+/gm, "").replace(/^[ \t]*>[ \t]?/gm, "").replace(/^[ \t]*[-+*][ \t]+/gm, "\u2022 ").replace(/\*\*([^*\n]+)\*\*/g, "$1").replace(/__([^_\n]+)__/g, "$1").replace(/~~([^~\n]+)~~/g, "$1").replace(/==([^=\n]+)==/g, "$1").replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "$1").replace(/(?<!_)_([^_\n]+)_(?!_)/g, "$1").replace(/`([^`\n]+)`/g, "$1").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+}
+function isNewspicTypeValue(value2) {
+  if (typeof value2 !== "string") {
+    return false;
+  }
+  return /^(?:贴图|图片消息|newspic)$/i.test(value2.trim().replace(/^['"]|['"]$/g, ""));
+}
+function stripFrontmatter2(markdown2) {
+  return markdown2.replace(FRONTMATTER_PATTERN, "");
+}
+function findFieldMarkers(lines) {
+  const markers3 = [];
+  let activeFence = null;
+  for (const [lineIndex, line2] of lines.entries()) {
+    const fence = line2.match(/^\s*(`{3,}|~{3,})/);
+    if (fence) {
+      const token2 = fence[1];
+      const char2 = token2[0];
+      if (!activeFence) {
+        activeFence = { char: char2, length: token2.length };
+      } else if (activeFence.char === char2 && token2.length >= activeFence.length) {
+        activeFence = null;
+      }
+      continue;
+    }
+    if (activeFence) {
+      continue;
+    }
+    const match2 = line2.match(FIELD_MARKER_PATTERN);
+    const field = match2 ? FIELD_BY_LABEL.get(match2[1]) : void 0;
+    if (!match2 || !field) {
+      continue;
+    }
+    markers3.push({
+      field,
+      label: match2[1],
+      lineIndex,
+      inlineValue: match2[2] ?? ""
+    });
+  }
+  return markers3;
+}
+function readSection(lines, marker, markers3, throughEnd = false) {
+  if (!marker) {
+    return "";
+  }
+  const nextMarker = throughEnd ? void 0 : markers3.find((item) => item.lineIndex > marker.lineIndex);
+  const endLine = nextMarker?.lineIndex ?? lines.length;
+  return lines.slice(marker.lineIndex + 1, endLine).join("\n").trim();
+}
+function joinInlineValueAndSection(marker, section) {
+  if (!marker) {
+    return section;
+  }
+  return [marker.inlineValue, section].filter(Boolean).join("\n").trim();
+}
+function extractImageReferences(markdown2) {
+  const matches33 = [];
+  const wikiPattern = /!\[\[([^\]\n]+)\]\]/g;
+  const markdownPattern = /!\[([^\]\n]*)\]\(\s*(<[^>\n]+>|[^)\n]+?)\s*\)/g;
+  const htmlPattern = /<img\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1[^>]*>/gi;
+  for (const match2 of markdown2.matchAll(wikiPattern)) {
+    const [rawPath = "", ...parts] = match2[1].split("|");
+    const alt = parts.map((part) => part.trim()).find((part) => part && !/^\d+(x\d+)?$/i.test(part)) ?? "";
+    const source = rawPath.trim();
+    if (source) {
+      matches33.push({
+        index: match2.index ?? 0,
+        reference: { source, alt, token: match2[0] }
+      });
+    }
+  }
+  for (const match2 of markdown2.matchAll(markdownPattern)) {
+    const rawSource = match2[2].trim();
+    const source = rawSource.startsWith("<") && rawSource.endsWith(">") ? rawSource.slice(1, -1).trim() : rawSource.replace(/\s+(?:"[^"]*"|'[^']*')\s*$/, "").trim();
+    if (source) {
+      matches33.push({
+        index: match2.index ?? 0,
+        reference: { source, alt: match2[1].trim(), token: match2[0] }
+      });
+    }
+  }
+  for (const match2 of markdown2.matchAll(htmlPattern)) {
+    const source = match2[2].trim();
+    if (source) {
+      matches33.push({
+        index: match2.index ?? 0,
+        reference: { source, alt: "", token: match2[0] }
+      });
+    }
+  }
+  return matches33.sort((left3, right3) => left3.index - right3.index).map((item) => item.reference);
+}
+function stripImageTokens(markdown2) {
+  let output2 = markdown2;
+  for (const reference of extractImageReferences(markdown2)) {
+    output2 = output2.replace(reference.token, "");
+  }
+  return stripNonVisibleMarkup(output2).trim();
+}
+function stripImageTokensAndListMarkers(markdown2) {
+  return stripImageTokens(markdown2).replace(/^[ \t]*(?:\d{1,2}[.)]|[-+*])[ \t]*$/gm, "").trim();
+}
+function stripNonVisibleMarkup(markdown2) {
+  return markdown2.replace(/%%[\s\S]*?%%/g, "").replace(/<!--([\s\S]*?)-->/g, "").trim();
+}
+function dedupeIssues(issues) {
+  const seen = /* @__PURE__ */ new Set();
+  return issues.filter((issue) => {
+    if (seen.has(issue.code)) {
+      return false;
+    }
+    seen.add(issue.code);
+    return true;
+  });
+}
+
 // src/preview-view.ts
 var import_obsidian4 = require("obsidian");
 var PREVIEW_VIEW_TYPE = "wechat-publisher-preview";
@@ -231231,6 +231501,9 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
   authorInputEl = null;
   coverInputEl = null;
   coverThumbEl = null;
+  articleDrawerFieldEls = [];
+  newspicDrawerHintEl = null;
+  copyButtonEl = null;
   // Account pill + dropdown
   accountPillEl = null;
   accountPillStatusEl = null;
@@ -231356,7 +231629,7 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
     this.renderIconButton(this.toolbarEl, "refresh", "\u5237\u65B0\u6E32\u67D3", () => {
       void this.refresh();
     });
-    this.renderIconButton(this.toolbarEl, "copy", "\u590D\u5236 HTML\uFF08\u514D\u8D39\uFF09", () => {
+    this.copyButtonEl = this.renderIconButton(this.toolbarEl, "copy", "\u590D\u5236 HTML\uFF08\u514D\u8D39\uFF09", () => {
       void this.plugin.copyActiveNoteHtml(this.plugin.settings.defaultThemeId);
     });
     this.toolbarEl.createDiv({ cls: "wp-divider" });
@@ -231381,6 +231654,7 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
   renderDrawer() {
     this.drawerEl = this.containerEl.createDiv({ cls: "wp-drawer" });
     const titleField = this.drawerEl.createDiv({ cls: "wp-field" });
+    this.articleDrawerFieldEls.push(titleField);
     titleField.createEl("span", { cls: "wp-field-label", text: "\u6807\u9898" });
     this.titleInputEl = titleField.createEl("input", {
       type: "text",
@@ -231394,6 +231668,7 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
       this.updateMetaCard();
     });
     const authorField = this.drawerEl.createDiv({ cls: "wp-field" });
+    this.articleDrawerFieldEls.push(authorField);
     authorField.createEl("span", { cls: "wp-field-label", text: "\u4F5C\u8005" });
     this.authorInputEl = authorField.createEl("input", {
       type: "text",
@@ -231407,6 +231682,7 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
       this.updateMetaCard();
     });
     const coverField = this.drawerEl.createDiv({ cls: "wp-field wide" });
+    this.articleDrawerFieldEls.push(coverField);
     coverField.createEl("span", { cls: "wp-field-label", text: "\u5C01\u9762" });
     const coverRow = coverField.createDiv({ cls: "wp-cover-row" });
     this.coverThumbEl = coverRow.createDiv({ cls: "wp-cover-thumb empty" });
@@ -231477,6 +231753,18 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
       this.plugin.resetPublishMetaDraftField("cover");
       void this.refresh();
     });
+    this.newspicDrawerHintEl = this.drawerEl.createDiv({
+      cls: "wp-newspic-drawer-hint"
+    });
+    this.newspicDrawerHintEl.createDiv({
+      cls: "wp-newspic-drawer-title",
+      text: "\u8D34\u56FE\u8D44\u6599\u8BF7\u76F4\u63A5\u5728\u7B14\u8BB0\u4E2D\u586B\u5199"
+    });
+    this.newspicDrawerHintEl.createDiv({
+      cls: "wp-newspic-drawer-desc",
+      text: "\u6807\u9898\u3001\u5C01\u9762\u3001\u8D34\u56FE\u548C\u6B63\u6587\u4EE5\u7B14\u8BB0\u5185\u7684\u56FA\u5B9A\u5B57\u6BB5\u4E3A\u51C6\uFF1B\u6B63\u6587\u53EF\u4EE5\u4E3A\u7A7A\uFF0C\u5C01\u9762\u8BA1\u5165 20 \u5F20\u56FE\u7247\u603B\u6570\u3002"
+    });
+    this.newspicDrawerHintEl.hide();
   }
   renderIconButton(container2, icon2, title2, onClick) {
     const btn = container2.createEl("button", { cls: "wp-icon-btn" });
@@ -231709,6 +231997,11 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
   populateMoreMenu() {
     if (!this.moreMenuEl) return;
     this.moreMenuEl.empty();
+    this.addMoreMenuItem("plus", "\u65B0\u5EFA\u8D34\u56FE", null, () => {
+      this.closeMoreMenu();
+      void this.plugin.createNewspicNote();
+    });
+    this.moreMenuEl.createDiv({ cls: "wp-menu-sep" });
     this.addMoreMenuItem("externalLink", "\u53BB\u516C\u4F17\u53F7\u540E\u53F0\u7C98\u8D34", null, () => {
       this.closeMoreMenu();
       this.plugin.openWechatPlatform();
@@ -231953,6 +232246,7 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
     const payload = await this.plugin.getRenderPayload(this.plugin.settings.defaultThemeId);
     this.previewEl.empty();
     if (!payload) {
+      this.setNewspicUiMode(false);
       this.metaEl.setText("\u8BF7\u5148\u5728\u4E3B\u7F16\u8F91\u533A\u6253\u5F00\u4E00\u7BC7 Markdown \u7B14\u8BB0\u3002");
       this.previewEl.createDiv({
         cls: "wp-empty",
@@ -231961,6 +232255,12 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
       this.setMetaCardEmpty();
       return;
     }
+    if (payload.newspic) {
+      this.setNewspicUiMode(true);
+      await this.renderNewspicPreview(payload.file, payload.newspic);
+      return;
+    }
+    this.setNewspicUiMode(false);
     const publishMetaDraft = this.plugin.getPublishMetaDraft(payload.file, payload.frontmatter);
     if (this.titleInputEl) this.titleInputEl.value = publishMetaDraft.title;
     if (this.authorInputEl) this.authorInputEl.value = publishMetaDraft.author;
@@ -231971,6 +232271,160 @@ var WeChatPublisherPreviewView = class extends import_obsidian4.ItemView {
     const articleEl = this.previewEl.createDiv({ cls: "wp-article" });
     articleEl.innerHTML = payload.result.html;
     this.updateMetaCard(publishMetaDraft);
+  }
+  setNewspicUiMode(enabled) {
+    for (const field of this.articleDrawerFieldEls) {
+      field.toggle(!enabled);
+    }
+    this.newspicDrawerHintEl?.toggle(enabled);
+    if (this.themePillEl) {
+      this.themePillEl.disabled = enabled;
+      this.themePillEl.toggleClass("is-disabled", enabled);
+      this.themePillEl.setAttr(
+        "title",
+        enabled ? "\u8D34\u56FE\u4E0D\u4F7F\u7528\u6587\u7AE0\u4E3B\u9898\u548C\u6392\u7248" : this.themePillEl.getAttribute("title") || "\u5207\u6362\u4E3B\u9898"
+      );
+    }
+    if (this.copyButtonEl) {
+      this.copyButtonEl.disabled = enabled;
+      this.copyButtonEl.toggleClass("is-disabled", enabled);
+      this.copyButtonEl.setAttr(
+        "title",
+        enabled ? "\u8D34\u56FE\u4E0D\u4F7F\u7528\u6587\u7AE0 HTML" : "\u590D\u5236 HTML\uFF08\u514D\u8D39\uFF09"
+      );
+    }
+    this.metaCardEl?.setAttr(
+      "title",
+      enabled ? "\u70B9\u51FB\u67E5\u770B\u8D34\u56FE\u5B57\u6BB5\u8BF4\u660E" : "\u70B9\u51FB\u7F16\u8F91\u672C\u6B21\u53D1\u5E03\u7684\u6807\u9898 / \u4F5C\u8005 / \u5C01\u9762"
+    );
+  }
+  async renderNewspicPreview(file, note3) {
+    if (!this.metaEl || !this.previewEl) return;
+    const resolvedImages = await Promise.all(
+      note3.images.map(async (imageRef) => {
+        try {
+          return await resolveAssetLinkForWechat(this.app, file, imageRef.source) ?? "";
+        } catch {
+          return "";
+        }
+      })
+    );
+    const unresolvedCount = resolvedImages.filter((source) => !source).length;
+    const validationText = note3.issues.length > 0 ? ` \xB7 \u5F85\u4FEE\u6B63 ${note3.issues.length} \u9879` : " \xB7 \u53EF\u53D1\u5E03";
+    this.metaEl.setText(
+      `${file.path} \xB7 \u8D34\u56FE \xB7 \u56FE\u7247 ${note3.images.length}/20\uFF08\u542B\u5C01\u9762\uFF09${validationText}`
+    );
+    const shell = this.previewEl.createDiv({ cls: "wp-newspic-preview" });
+    const topbar = shell.createDiv({ cls: "wp-newspic-topbar" });
+    topbar.createEl("span", { cls: "wp-newspic-type", text: "\u8D34\u56FE" });
+    topbar.createEl("span", {
+      cls: `wp-newspic-count${note3.images.length > 20 ? " is-error" : ""}`,
+      text: `${note3.images.length}/20 \u5F20 \xB7 \u9996\u56FE\u5C01\u9762`
+    });
+    if (note3.issues.length > 0 || unresolvedCount > 0) {
+      const errorBox = shell.createDiv({ cls: "wp-newspic-errors" });
+      errorBox.createDiv({ cls: "wp-newspic-errors-title", text: "\u53D1\u5E03\u524D\u8BF7\u4FEE\u6B63" });
+      const list2 = errorBox.createEl("ul");
+      for (const issue of note3.issues) {
+        list2.createEl("li", { text: issue.message });
+      }
+      if (unresolvedCount > 0) {
+        list2.createEl("li", {
+          text: `\u6709 ${unresolvedCount} \u5F20\u56FE\u7247\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\uFF0C\u8BF7\u68C0\u67E5\u56FE\u7247\u8DEF\u5F84\u3002`
+        });
+      }
+    }
+    const media = shell.createDiv({ cls: "wp-newspic-media" });
+    if (resolvedImages.length === 0) {
+      media.createDiv({
+        cls: "wp-newspic-media-empty",
+        text: "\u5728\u201C## \u5C01\u9762\uFF1A\u201D\u4E0B\u653E\u5165\u7B2C\u4E00\u5F20\u56FE\u7247\uFF1B\u5176\u4F59\u56FE\u7247\u653E\u5230\u201C## \u8D34\u56FE\uFF1A\u201D\u4E0B\u3002"
+      });
+    } else {
+      const cover = media.createDiv({ cls: "wp-newspic-cover" });
+      this.renderNewspicPreviewImage(
+        cover,
+        resolvedImages[0],
+        note3.images[0]?.alt || "\u8D34\u56FE\u5C01\u9762"
+      );
+      if (resolvedImages.length > 1) {
+        const grid = media.createDiv({ cls: "wp-newspic-grid" });
+        for (const [index2, source] of resolvedImages.entries()) {
+          const item = grid.createDiv({ cls: "wp-newspic-grid-item" });
+          item.createEl("span", { cls: "wp-newspic-index", text: String(index2 + 1) });
+          this.renderNewspicPreviewImage(
+            item,
+            source,
+            note3.images[index2]?.alt || `\u8D34\u56FE\u7B2C ${index2 + 1} \u5F20`
+          );
+        }
+      }
+    }
+    const copy5 = shell.createDiv({ cls: "wp-newspic-copy" });
+    copy5.createEl("h2", {
+      cls: note3.title ? "" : "is-placeholder",
+      text: note3.title || "\u8BF7\u5728\u201C## \u6807\u9898\uFF1A\u201D\u5192\u53F7\u540E\u586B\u5199\u6807\u9898"
+    });
+    const content = copy5.createDiv({
+      cls: `wp-newspic-content${note3.contentText ? "" : " is-placeholder"}`
+    });
+    content.setText(note3.contentText || "\u672A\u586B\u5199\u6B63\u6587\uFF08\u9009\u586B\uFF09");
+    this.updateNewspicMetaCard(note3, resolvedImages[0] ?? "");
+  }
+  renderNewspicPreviewImage(container2, source, alt) {
+    if (!source) {
+      container2.addClass("is-missing");
+      this.appendIcon(container2, "image", { size: 22 });
+      return;
+    }
+    const image = document.createElement("img");
+    image.src = source;
+    image.alt = alt;
+    image.loading = "lazy";
+    image.addEventListener("error", () => {
+      container2.empty();
+      container2.addClass("is-missing");
+      this.appendIcon(container2, "image", { size: 22 });
+    });
+    container2.appendChild(image);
+  }
+  updateNewspicMetaCard(note3, coverSource) {
+    if (this.metaTitleEl) {
+      this.metaTitleEl.setText(note3.title || "\u672A\u586B\u5199\u8D34\u56FE\u6807\u9898");
+      this.metaTitleEl.toggleClass("untitled", !note3.title);
+      if (note3.title) {
+        this.metaTitleEl.setAttr("title", note3.title);
+      } else {
+        this.metaTitleEl.removeAttribute("title");
+      }
+    }
+    if (this.metaSubEl) {
+      this.metaSubEl.empty();
+      this.metaSubEl.createEl("span", { text: "\u8D34\u56FE" });
+      this.metaSubEl.createEl("span", { cls: "sep", text: "\xB7" });
+      this.metaSubEl.createEl("span", { text: `${note3.images.length}/20 \u5F20` });
+      this.metaSubEl.createEl("span", { cls: "sep", text: "\xB7" });
+      this.metaSubEl.createEl("span", {
+        cls: "edit-hint",
+        text: this.drawerOpen ? "\u6536\u8D77 \u2191" : "\u5B57\u6BB5\u8BF4\u660E \u2192"
+      });
+    }
+    if (this.metaCoverEl) {
+      this.metaCoverEl.empty();
+      if (coverSource) {
+        this.metaCoverEl.removeClass("empty");
+        this.metaCoverEl.addClass("has-image");
+        const image = document.createElement("img");
+        image.src = coverSource;
+        image.alt = "\u8D34\u56FE\u5C01\u9762";
+        image.className = "wp-cover-img";
+        this.metaCoverEl.appendChild(image);
+      } else {
+        this.metaCoverEl.removeClass("has-image");
+        this.metaCoverEl.addClass("empty");
+        this.appendIcon(this.metaCoverEl, "image");
+      }
+    }
   }
   setMetaCardEmpty() {
     if (this.metaTitleEl) {
@@ -233215,6 +233669,10 @@ var ARTICLE_MAX_BYTES = 9e5;
 var ARTICLE_MAX_WIDTH = 1920;
 var ARTICLE_MAX_HEIGHT = 1920;
 var ARTICLE_JPEG_QUALITY = 0.85;
+var MATERIAL_MAX_BYTES = 9e6;
+var NEWSPIC_MAX_WIDTH = 2560;
+var NEWSPIC_MAX_HEIGHT = 2560;
+var NEWSPIC_JPEG_QUALITY = 0.9;
 var IMAGE_EXTENSIONS2 = /* @__PURE__ */ new Map([
   ["png", "image/png"],
   ["jpg", "image/jpeg"],
@@ -233418,6 +233876,9 @@ function safeGetAdapterFullPath(app, normalizedPath) {
 }
 function isWechatPreferredArticleImageType(contentType) {
   return /(image\/png|image\/jpeg|image\/jpg)/i.test(contentType);
+}
+function isWechatPreferredMaterialImageType(contentType) {
+  return /(image\/png|image\/jpeg|image\/jpg|image\/gif)/i.test(contentType);
 }
 function bytesToUtf8String(bytes) {
   return new TextDecoder().decode(bytes);
@@ -233916,9 +234377,37 @@ async function normalizeWechatCoverAsset(asset) {
     quality: COVER_JPEG_QUALITY
   });
 }
-async function forceSafeWechatAsset(endpoint, asset) {
+async function normalizeWechatNewspicAsset(asset) {
+  if (isWechatPreferredMaterialImageType(asset.contentType) && asset.bytes.byteLength <= MATERIAL_MAX_BYTES) {
+    return asset;
+  }
+  if (asset.bytes.byteLength <= MATERIAL_MAX_BYTES) {
+    try {
+      const png2 = await convertAssetToPng(asset);
+      if (png2.bytes.byteLength <= MATERIAL_MAX_BYTES) {
+        return png2;
+      }
+    } catch (error3) {
+      console.warn("\u8D34\u56FE\u56FE\u7247\u8F6C PNG \u5931\u8D25\uFF0C\u5C06\u56DE\u9000\u4E3A JPEG", {
+        filename: asset.filename,
+        contentType: asset.contentType,
+        error: error3
+      });
+    }
+  }
+  return convertAssetToJpeg(asset, {
+    maxWidth: NEWSPIC_MAX_WIDTH,
+    maxHeight: NEWSPIC_MAX_HEIGHT,
+    quality: NEWSPIC_JPEG_QUALITY
+  });
+}
+async function forceSafeWechatAsset(endpoint, asset, materialKind = "cover") {
   if (endpoint === "material") {
-    return normalizeWechatCoverAsset(asset);
+    return materialKind === "newspic" ? convertAssetToJpeg(asset, {
+      maxWidth: NEWSPIC_MAX_WIDTH,
+      maxHeight: NEWSPIC_MAX_HEIGHT,
+      quality: NEWSPIC_JPEG_QUALITY
+    }) : normalizeWechatCoverAsset(asset);
   }
   return convertAssetToJpeg(asset, {
     maxWidth: ARTICLE_MAX_WIDTH,
@@ -234141,15 +234630,15 @@ async function resolveArticleImageAsset(app, file, source) {
   }
   throw new Error(`\u65E0\u6CD5\u89E3\u6790\u672C\u5730\u56FE\u7247\u8DEF\u5F84\uFF1A${source}`);
 }
-async function uploadWechatImage(accessToken, endpoint, asset) {
+async function uploadWechatImage(accessToken, endpoint, asset, materialKind = "cover") {
   const uploadUrl = endpoint === "uploadimg" ? `https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token=${accessToken}` : `https://api.weixin.qq.com/cgi-bin/material/add_material?access_token=${accessToken}&type=image`;
-  const requestLabel = endpoint === "uploadimg" ? "\u4E0A\u4F20\u6B63\u6587\u56FE\u7247" : "\u4E0A\u4F20\u5C01\u9762";
+  const requestLabel = endpoint === "uploadimg" ? "\u4E0A\u4F20\u6B63\u6587\u56FE\u7247" : materialKind === "newspic" ? "\u4E0A\u4F20\u8D34\u56FE\u56FE\u7247" : "\u4E0A\u4F20\u5C01\u9762";
   let normalizedAsset;
   try {
-    normalizedAsset = endpoint === "material" ? await normalizeWechatCoverAsset(asset) : await normalizeWechatAsset(asset);
+    normalizedAsset = endpoint === "material" ? materialKind === "newspic" ? await normalizeWechatNewspicAsset(asset) : await normalizeWechatCoverAsset(asset) : await normalizeWechatAsset(asset);
   } catch (error3) {
     throw new Error(
-      `${endpoint === "material" ? "\u5C01\u9762\u56FE\u7247\u9884\u5904\u7406\u5931\u8D25" : "\u6B63\u6587\u56FE\u7247\u9884\u5904\u7406\u5931\u8D25"}\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u6587\u4EF6\uFF1A${asset.filename}\uFF1B\u7C7B\u578B\uFF1A${asset.contentType}${asset.filePath ? `\uFF1B\u6587\u4EF6\u8DEF\u5F84\uFF1A${previewSource(asset.filePath)}` : ""}${asset.sourceUrl ? `\uFF1B\u6765\u6E90\uFF1A${previewSource(asset.sourceUrl)}` : ""}`
+      `${endpoint === "material" ? materialKind === "newspic" ? "\u8D34\u56FE\u56FE\u7247\u9884\u5904\u7406\u5931\u8D25" : "\u5C01\u9762\u56FE\u7247\u9884\u5904\u7406\u5931\u8D25" : "\u6B63\u6587\u56FE\u7247\u9884\u5904\u7406\u5931\u8D25"}\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u6587\u4EF6\uFF1A${asset.filename}\uFF1B\u7C7B\u578B\uFF1A${asset.contentType}${asset.filePath ? `\uFF1B\u6587\u4EF6\u8DEF\u5F84\uFF1A${previewSource(asset.filePath)}` : ""}${asset.sourceUrl ? `\uFF1B\u6765\u6E90\uFF1A${previewSource(asset.sourceUrl)}` : ""}`
     );
   }
   const attemptUpload = async (currentAsset) => {
@@ -234179,7 +234668,7 @@ async function uploadWechatImage(accessToken, endpoint, asset) {
       byteLength: normalizedAsset.bytes.byteLength,
       error: error3
     });
-    normalizedAsset = await forceSafeWechatAsset(endpoint, asset);
+    normalizedAsset = await forceSafeWechatAsset(endpoint, asset, materialKind);
     try {
       data6 = await attemptUpload(normalizedAsset);
     } catch (retryError) {
@@ -234196,7 +234685,9 @@ async function uploadWechatImage(accessToken, endpoint, asset) {
     return data6.url;
   }
   if (!data6.media_id) {
-    throw new Error("\u5C01\u9762\u4E0A\u4F20\u540E\u6CA1\u6709\u8FD4\u56DE media_id");
+    throw new Error(
+      materialKind === "newspic" ? "\u8D34\u56FE\u56FE\u7247\u4E0A\u4F20\u540E\u6CA1\u6709\u8FD4\u56DE media_id" : "\u5C01\u9762\u4E0A\u4F20\u540E\u6CA1\u6709\u8FD4\u56DE media_id"
+    );
   }
   return data6.media_id;
 }
@@ -234306,16 +234797,19 @@ async function resolveExistingDraft(accessToken, options3) {
     });
     const items = data6.item ?? [];
     for (const item of items) {
-      const currentTitle = item.content?.news_item?.[0]?.title?.trim() ?? "";
+      const firstArticle = item.content?.news_item?.[0];
+      const currentTitle = firstArticle?.title?.trim() ?? "";
+      const currentArticleType = firstArticle?.article_type === "newspic" ? "newspic" : firstArticle?.article_type === "news" ? "news" : null;
       const resolvedDraft = {
         mediaId: item.media_id,
         title: currentTitle,
+        articleType: currentArticleType ?? options3.articleType,
         updateTime: item.update_time ?? 0
       };
-      if (normalizedMediaId && item.media_id === normalizedMediaId) {
+      if (normalizedMediaId && item.media_id === normalizedMediaId && (!currentArticleType || currentArticleType === options3.articleType)) {
         return resolvedDraft;
       }
-      if (normalizedTitle && currentTitle === normalizedTitle && (!latestTitleMatch || resolvedDraft.updateTime > latestTitleMatch.updateTime)) {
+      if (normalizedTitle && currentTitle === normalizedTitle && currentArticleType === options3.articleType && (!latestTitleMatch || resolvedDraft.updateTime > latestTitleMatch.updateTime)) {
         latestTitleMatch = resolvedDraft;
       }
     }
@@ -234340,7 +234834,7 @@ function isMediaFileCountOutOfLimitError(error3) {
 }
 function createMaterialLimitError() {
   return new Error(
-    "\u516C\u4F17\u53F7\u56FE\u7247\u7D20\u6750\u5E93\u5DF2\u6EE1\uFF0C\u5FAE\u4FE1\u62D2\u7EDD\u7EE7\u7EED\u4E0A\u4F20\u5C01\u9762\u56FE\u3002\u8BF7\u5230\u516C\u4F17\u53F7\u540E\u53F0\u300C\u5185\u5BB9\u4E0E\u4E92\u52A8 > \u7D20\u6750\u5E93\u300D\u6E05\u7406\u56FE\u7247\u7D20\u6750\uFF0C\u6216\u6362\u7528\u5DF2\u7F13\u5B58\u8FC7\u7684\u5C01\u9762\u540E\u91CD\u8BD5\u3002"
+    "\u516C\u4F17\u53F7\u56FE\u7247\u7D20\u6750\u5E93\u5DF2\u6EE1\uFF0C\u5FAE\u4FE1\u62D2\u7EDD\u7EE7\u7EED\u4E0A\u4F20\u56FE\u7247\u3002\u8BF7\u5230\u516C\u4F17\u53F7\u540E\u53F0\u300C\u5185\u5BB9\u4E0E\u4E92\u52A8 > \u7D20\u6750\u5E93\u300D\u6E05\u7406\u56FE\u7247\u7D20\u6750\u540E\u91CD\u8BD5\u3002"
   );
 }
 async function validateWechatMaterialMediaId(accessToken, mediaId) {
@@ -234462,7 +234956,8 @@ async function publishDraftToWechat(input) {
   const author = typeof input.frontmatter.author === "string" ? input.frontmatter.author.trim() : "";
   const resolvedDraft = await resolveExistingDraft(accessToken, {
     mediaId: input.existingDraftMediaId ?? null,
-    title: title2
+    title: title2,
+    articleType: "news"
   });
   const existingDraftMediaId = resolvedDraft?.mediaId ?? "";
   const coverProgressPrefix = coverAction === "reused" ? "\u5DF2\u590D\u7528\u5386\u53F2\u5C01\u9762" : coverAction === "uploaded" ? "\u5DF2\u4E0A\u4F20\u65B0\u5C01\u9762" : "\u5C01\u9762\u5DF2\u5904\u7406";
@@ -234477,6 +234972,7 @@ async function publishDraftToWechat(input) {
             media_id: existingDraftMediaId,
             index: 0,
             articles: {
+              article_type: "news",
               title: title2,
               author,
               content: publishHtml,
@@ -234497,7 +234993,7 @@ async function publishDraftToWechat(input) {
         title: title2,
         imageCount,
         action: "updated",
-        coverMediaRecord
+        mediaRecords: coverMediaRecord ? [coverMediaRecord] : []
       };
     } catch (error3) {
       if (!isInvalidMediaIdError(error3)) {
@@ -234516,6 +235012,7 @@ async function publishDraftToWechat(input) {
       body: JSON.stringify({
         articles: [
           {
+            article_type: "news",
             title: title2,
             author,
             content: publishHtml,
@@ -234544,7 +235041,161 @@ async function publishDraftToWechat(input) {
     title: title2,
     imageCount,
     action: "created",
-    coverMediaRecord
+    mediaRecords: coverMediaRecord ? [coverMediaRecord] : []
+  };
+}
+async function publishNewspicDraftToWechat(input) {
+  if (!input.account.appId || !input.account.appSecret) {
+    throw new Error("\u5F53\u524D\u8D26\u53F7\u7F3A\u5C11 AppID \u6216 AppSecret");
+  }
+  if (input.note.issues.length > 0) {
+    throw new Error(input.note.issues.map((issue) => issue.message).join("\uFF1B"));
+  }
+  if (input.note.images.length === 0) {
+    throw new Error("\u8D34\u56FE\u81F3\u5C11\u9700\u8981\u4E00\u5F20\u5C01\u9762\u56FE\u7247\u3002");
+  }
+  input.onProgress?.("\u6B63\u5728\u83B7\u53D6\u516C\u4F17\u53F7 access_token...");
+  const accessToken = await getAccessToken(input.account);
+  const uploadedMediaIds = [];
+  const nextMediaRecords = /* @__PURE__ */ new Map();
+  const mediaIdBySourceKey = /* @__PURE__ */ new Map();
+  let reusedCount = 0;
+  let uploadedCount = 0;
+  for (const [index2, imageRef] of input.note.images.entries()) {
+    input.onProgress?.(`\u6B63\u5728\u5904\u7406\u8D34\u56FE\u56FE\u7247 ${index2 + 1}/${input.note.images.length}...`);
+    let asset;
+    try {
+      asset = await resolveArticleImageAsset(input.app, input.file, imageRef.source);
+    } catch (error3) {
+      throw new Error(
+        `\u7B2C ${index2 + 1} \u5F20\u8D34\u56FE\u56FE\u7247\u8BFB\u53D6\u5931\u8D25\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u6765\u6E90\uFF1A${previewSource(imageRef.source)}`
+      );
+    }
+    const sourceKey = await createCoverMediaSourceKey(asset);
+    const currentMediaId = mediaIdBySourceKey.get(sourceKey);
+    if (currentMediaId) {
+      uploadedMediaIds.push(currentMediaId);
+      reusedCount += 1;
+      continue;
+    }
+    const cachedRecord = input.mediaRecords?.find(
+      (record) => record.accountId === input.account.id && record.sourceKey === sourceKey
+    );
+    let mediaId = "";
+    if (cachedRecord?.mediaId) {
+      try {
+        if (await validateWechatMaterialMediaId(accessToken, cachedRecord.mediaId)) {
+          mediaId = cachedRecord.mediaId;
+          reusedCount += 1;
+        }
+      } catch (error3) {
+        console.warn("\u6821\u9A8C\u5DF2\u7F13\u5B58\u8D34\u56FE\u7D20\u6750\u5931\u8D25\uFF0C\u5C06\u91CD\u65B0\u4E0A\u4F20", {
+          mediaId: cachedRecord.mediaId,
+          source: imageRef.source,
+          error: error3
+        });
+      }
+    }
+    if (!mediaId) {
+      try {
+        mediaId = await uploadWechatImage(accessToken, "material", asset, "newspic");
+        uploadedCount += 1;
+      } catch (error3) {
+        throw new Error(
+          `\u7B2C ${index2 + 1} \u5F20\u8D34\u56FE\u56FE\u7247\u4E0A\u4F20\u5931\u8D25\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u6765\u6E90\uFF1A${previewSource(imageRef.source)}`
+        );
+      }
+    }
+    mediaIdBySourceKey.set(sourceKey, mediaId);
+    uploadedMediaIds.push(mediaId);
+    nextMediaRecords.set(sourceKey, {
+      accountId: input.account.id,
+      sourceKey,
+      mediaId,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
+  const title2 = input.note.title;
+  const resolvedDraft = await resolveExistingDraft(accessToken, {
+    mediaId: input.existingDraftMediaId ?? null,
+    title: title2,
+    articleType: "newspic"
+  });
+  const existingDraftMediaId = resolvedDraft?.mediaId ?? "";
+  const article = {
+    article_type: "newspic",
+    title: title2,
+    content: input.note.contentText,
+    need_open_comment: 0,
+    only_fans_can_comment: 0,
+    image_info: {
+      image_list: uploadedMediaIds.map((imageMediaId) => ({
+        image_media_id: imageMediaId
+      }))
+    }
+  };
+  const progressPrefix = `\u5DF2\u5904\u7406 ${uploadedMediaIds.length} \u5F20\u56FE\u7247\uFF08\u590D\u7528 ${reusedCount} \u5F20\u3001\u65B0\u4E0A\u4F20 ${uploadedCount} \u5F20\uFF09`;
+  if (existingDraftMediaId) {
+    input.onProgress?.(`${progressPrefix}\uFF0C\u6B63\u5728\u66F4\u65B0\u5DF2\u6709\u8D34\u56FE\u8349\u7A3F...`);
+    try {
+      await requestWechatJson(
+        `https://api.weixin.qq.com/cgi-bin/draft/update?access_token=${accessToken}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_id: existingDraftMediaId,
+            index: 0,
+            articles: article
+          }),
+          headers: {
+            "Content-Type": "application/json"
+          },
+          timeoutMs: UPLOAD_TIMEOUT_MS,
+          requestLabel: "\u66F4\u65B0\u8D34\u56FE\u8349\u7A3F"
+        }
+      );
+      return {
+        mediaId: existingDraftMediaId,
+        title: title2,
+        imageCount: uploadedMediaIds.length,
+        action: "updated",
+        mediaRecords: Array.from(nextMediaRecords.values())
+      };
+    } catch (error3) {
+      if (!isInvalidMediaIdError(error3)) {
+        throw new Error(
+          `\u66F4\u65B0\u8D34\u56FE\u8349\u7A3F\u5931\u8D25\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u6807\u9898\uFF1A${title2}\uFF1B\u56FE\u7247\uFF1A${uploadedMediaIds.length} \u5F20`
+        );
+      }
+      input.onProgress?.("\u65E7\u8D34\u56FE\u8349\u7A3F\u8BB0\u5F55\u5DF2\u5931\u6548\uFF0C\u6B63\u5728\u6539\u4E3A\u65B0\u5EFA\u8349\u7A3F...");
+    }
+  }
+  input.onProgress?.(`${progressPrefix}\uFF0C\u6B63\u5728\u63D0\u4EA4\u8D34\u56FE\u8349\u7A3F\u5230\u5FAE\u4FE1...`);
+  const data6 = await requestWechatJson(
+    `https://api.weixin.qq.com/cgi-bin/draft/add?access_token=${accessToken}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ articles: [article] }),
+      headers: {
+        "Content-Type": "application/json"
+      },
+      timeoutMs: UPLOAD_TIMEOUT_MS,
+      requestLabel: "\u63D0\u4EA4\u8D34\u56FE\u8349\u7A3F"
+    }
+  ).catch((error3) => {
+    throw new Error(
+      `\u63D0\u4EA4\u8D34\u56FE\u8349\u7A3F\u5931\u8D25\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}\uFF1B\u6807\u9898\uFF1A${title2}\uFF1B\u56FE\u7247\uFF1A${uploadedMediaIds.length} \u5F20`
+    );
+  });
+  if (!data6.media_id) {
+    throw new Error("\u8D34\u56FE\u8349\u7A3F\u53D1\u5E03\u6210\u529F\u54CD\u5E94\u4E2D\u7F3A\u5C11 media_id");
+  }
+  return {
+    mediaId: data6.media_id,
+    title: title2,
+    imageCount: uploadedMediaIds.length,
+    action: "created",
+    mediaRecords: Array.from(nextMediaRecords.values())
   };
 }
 
@@ -234596,6 +235247,13 @@ var WeChatPublisherPlugin = class extends import_obsidian10.Plugin {
           void this.copyActiveNoteHtml();
         }
         return true;
+      }
+    });
+    this.addCommand({
+      id: "create-newspic-note",
+      name: "\u65B0\u5EFA\u8D34\u56FE",
+      callback: () => {
+        void this.createNewspicNote();
       }
     });
     this.addCommand({
@@ -234712,16 +235370,19 @@ var WeChatPublisherPlugin = class extends import_obsidian10.Plugin {
       return null;
     }
     const rawMarkdown = await this.app.vault.cachedRead(file);
-    const markdown2 = await preprocessMarkdownForWechat(this.app, file, rawMarkdown);
+    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+    const newspic = isNewspicNote(frontmatter, rawMarkdown) ? parseNewspicNote(rawMarkdown) : null;
+    const markdown2 = newspic ? "" : await preprocessMarkdownForWechat(this.app, file, rawMarkdown);
     const resolvedThemeId = this.resolveAccessibleThemeId(themeId ?? this.settings.defaultThemeId);
     const theme = getThemeById(resolvedThemeId);
     const styleProfile = this.getCurrentStyleProfile();
     const result = renderMarkdownToWechatHtml(markdown2, { theme, styleProfile });
-    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
     return {
       file,
+      rawMarkdown,
       markdown: markdown2,
       frontmatter,
+      newspic,
       theme,
       styleProfile,
       result
@@ -234734,6 +235395,10 @@ var WeChatPublisherPlugin = class extends import_obsidian10.Plugin {
     const payload = await this.getRenderPayload(themeId);
     if (!payload) {
       new import_obsidian10.Notice("\u8BF7\u5148\u6253\u5F00\u4E00\u4E2A Markdown \u6587\u4EF6\u3002");
+      return;
+    }
+    if (payload.newspic) {
+      new import_obsidian10.Notice("\u8D34\u56FE\u4E0D\u4F7F\u7528\u6587\u7AE0 HTML\uFF0C\u8BF7\u76F4\u63A5\u70B9\u51FB\u201C\u53D1\u5E03\u8349\u7A3F\u201D\u3002");
       return;
     }
     try {
@@ -234937,6 +235602,54 @@ var WeChatPublisherPlugin = class extends import_obsidian10.Plugin {
     this.app.workspace.revealLeaf(leaf);
     await leaf.view.refresh();
   }
+  async createNewspicNote() {
+    const sourceFile = this.getActiveMarkdownFile();
+    const timestamp2 = formatNewspicFilenameTimestamp(/* @__PURE__ */ new Date());
+    const baseName = `\u672A\u547D\u540D\u8D34\u56FE ${timestamp2}`;
+    const parent5 = this.app.fileManager.getNewFileParent(
+      sourceFile?.path ?? "",
+      `${baseName}.md`
+    );
+    let candidateName = baseName;
+    let candidatePath = (0, import_obsidian10.normalizePath)(
+      parent5.path ? `${parent5.path}/${candidateName}.md` : `${candidateName}.md`
+    );
+    let suffix = 2;
+    while (this.app.vault.getAbstractFileByPath(candidatePath)) {
+      candidateName = `${baseName}-${suffix}`;
+      candidatePath = (0, import_obsidian10.normalizePath)(
+        parent5.path ? `${parent5.path}/${candidateName}.md` : `${candidateName}.md`
+      );
+      suffix += 1;
+    }
+    try {
+      const createdFile = await this.app.vault.create(candidatePath, NEWSPIC_NOTE_TEMPLATE);
+      const sourceLeaf = sourceFile ? this.app.workspace.getLeavesOfType("markdown").find((leaf) => {
+        return leaf.view instanceof import_obsidian10.MarkdownView && leaf.view.file?.path === sourceFile.path;
+      }) : null;
+      const targetLeaf = sourceLeaf ?? this.findMarkdownLeaf() ?? this.app.workspace.getLeaf(true);
+      await targetLeaf.openFile(createdFile);
+      this.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+      this.lastMarkdownFilePath = createdFile.path;
+      if (targetLeaf.view instanceof import_obsidian10.MarkdownView) {
+        const titleLineIndex = NEWSPIC_NOTE_TEMPLATE.split("\n").findIndex(
+          (line2) => line2.startsWith("## \u6807\u9898\uFF1A")
+        );
+        if (titleLineIndex >= 0) {
+          targetLeaf.view.editor.setCursor({
+            line: titleLineIndex,
+            ch: "## \u6807\u9898\uFF1A".length
+          });
+          targetLeaf.view.editor.focus();
+        }
+      }
+      await this.refreshPreviewLeaves();
+      new import_obsidian10.Notice("\u5DF2\u65B0\u5EFA\u8D34\u56FE\u6A21\u677F\uFF0C\u8BF7\u586B\u5199\u6807\u9898\u5E76\u52A0\u5165\u5C01\u9762\u56FE\u7247\u3002");
+    } catch (error3) {
+      console.error(error3);
+      new import_obsidian10.Notice(`\u65B0\u5EFA\u8D34\u56FE\u5931\u8D25\uFF1A${error3 instanceof Error ? error3.message : "\u672A\u77E5\u9519\u8BEF"}`);
+    }
+  }
   async refreshPreviewLeaves() {
     const leaves = this.app.workspace.getLeavesOfType(PREVIEW_VIEW_TYPE);
     for (const leaf of leaves) {
@@ -235040,14 +235753,14 @@ var WeChatPublisherPlugin = class extends import_obsidian10.Plugin {
       ...this.settings.styleOverrides
     };
   }
-  getDraftRecord(filePath, accountId) {
+  getDraftRecord(filePath, accountId, articleType = "news") {
     return this.settings.draftRecords.find(
-      (record) => record.notePath === filePath && record.accountId === accountId
+      (record) => record.notePath === filePath && record.accountId === accountId && record.articleType === articleType
     ) ?? null;
   }
   async upsertDraftRecord(record) {
     const existingIndex = this.settings.draftRecords.findIndex(
-      (item) => item.notePath === record.notePath && item.accountId === record.accountId
+      (item) => item.notePath === record.notePath && item.accountId === record.accountId && item.articleType === record.articleType
     );
     if (existingIndex >= 0) {
       this.settings.draftRecords[existingIndex] = record;
@@ -235058,13 +235771,21 @@ var WeChatPublisherPlugin = class extends import_obsidian10.Plugin {
     await this.saveSettings({ refreshPreview: false });
   }
   async upsertCoverMediaRecord(record) {
-    const existingIndex = this.settings.coverMediaRecords.findIndex(
-      (item) => item.accountId === record.accountId && item.sourceKey === record.sourceKey
-    );
-    if (existingIndex >= 0) {
-      this.settings.coverMediaRecords[existingIndex] = record;
-    } else {
-      this.settings.coverMediaRecords.unshift(record);
+    await this.upsertCoverMediaRecords([record]);
+  }
+  async upsertCoverMediaRecords(records) {
+    if (records.length === 0) {
+      return;
+    }
+    for (const record of records) {
+      const existingIndex = this.settings.coverMediaRecords.findIndex(
+        (item) => item.accountId === record.accountId && item.sourceKey === record.sourceKey
+      );
+      if (existingIndex >= 0) {
+        this.settings.coverMediaRecords[existingIndex] = record;
+      } else {
+        this.settings.coverMediaRecords.unshift(record);
+      }
     }
     this.settings.coverMediaRecords = pruneCoverMediaRecords(this.settings.coverMediaRecords);
     await this.saveSettings({ refreshPreview: false });
@@ -235234,37 +235955,54 @@ var WeChatPublisherPlugin = class extends import_obsidian10.Plugin {
       return;
     }
     this.isPublishing = true;
+    const articleType = payload.newspic ? "newspic" : "news";
+    const progressTitle = payload.newspic?.title || payload.file.basename;
     const progressNotice = this.createProgressNotice(
-      `\u5F00\u59CB\u53D1\u5E03\u300A${payload.file.basename}\u300B\u5230\u516C\u4F17\u53F7\u8349\u7A3F\u7BB1...`
+      `\u5F00\u59CB\u53D1\u5E03\u300A${progressTitle}\u300B\u5230\u516C\u4F17\u53F7\u8349\u7A3F\u7BB1...`
     );
     try {
-      const frontmatter = this.buildPublishFrontmatter(payload.file, payload.frontmatter, account);
-      const existingDraftRecord = this.getDraftRecord(payload.file.path, account.id);
-      const result = await publishDraftToWechat({
+      const existingDraftRecord = this.getDraftRecord(
+        payload.file.path,
+        account.id,
+        articleType
+      );
+      const onProgress = (message) => {
+        progressNotice.setMessage(message);
+      };
+      const result = payload.newspic ? await publishNewspicDraftToWechat({
+        app: this.app,
+        account,
+        file: payload.file,
+        note: payload.newspic,
+        existingDraftMediaId: existingDraftRecord?.mediaId ?? null,
+        mediaRecords: this.settings.coverMediaRecords,
+        onProgress
+      }) : await publishDraftToWechat({
         app: this.app,
         account,
         file: payload.file,
         html: payload.result.html,
-        frontmatter,
+        frontmatter: this.buildPublishFrontmatter(
+          payload.file,
+          payload.frontmatter,
+          account
+        ),
         existingDraftMediaId: existingDraftRecord?.mediaId ?? null,
         coverMediaRecords: this.settings.coverMediaRecords,
-        onProgress: (message) => {
-          progressNotice.setMessage(message);
-        }
+        onProgress
       });
-      if (result.coverMediaRecord) {
-        await this.upsertCoverMediaRecord(result.coverMediaRecord);
-      }
+      await this.upsertCoverMediaRecords(result.mediaRecords);
       await this.upsertDraftRecord({
         notePath: payload.file.path,
         accountId: account.id,
+        articleType,
         mediaId: result.mediaId,
         title: result.title,
         updatedAt: (/* @__PURE__ */ new Date()).toISOString()
       });
       progressNotice.hide();
       this.showDismissibleNotice(
-        `${result.action === "updated" ? "\u5DF2\u66F4\u65B0\u8349\u7A3F" : "\u53D1\u5E03\u6210\u529F"}\uFF1A${result.title}\uFF0C\u5DF2\u4E0A\u4F20 ${result.imageCount} \u5F20\u56FE\u7247\u3002`,
+        `${result.action === "updated" ? "\u5DF2\u66F4\u65B0\u8349\u7A3F" : "\u53D1\u5E03\u6210\u529F"}\uFF1A${result.title}\uFF0C${payload.newspic ? `\u5305\u542B ${result.imageCount} \u5F20\u8D34\u56FE\u56FE\u7247` : `\u5DF2\u5904\u7406 ${result.imageCount} \u5F20\u6B63\u6587\u56FE\u7247`}\u3002`,
         15e3
       );
       this.openWechatPlatform();
@@ -235357,6 +236095,10 @@ function pickFileExtension(file) {
   if (file.type.includes("webp")) return "webp";
   if (file.type.includes("svg")) return "svg";
   return "jpg";
+}
+function formatNewspicFilenameTimestamp(date2) {
+  const pad3 = (value2) => String(value2).padStart(2, "0");
+  return `${date2.getFullYear()}${pad3(date2.getMonth() + 1)}${pad3(date2.getDate())}-${pad3(date2.getHours())}${pad3(date2.getMinutes())}`;
 }
 async function validateWechatCoverCandidate(file) {
   const image = await loadImageFromFile(file);
