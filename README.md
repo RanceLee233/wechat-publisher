@@ -24,7 +24,7 @@ Obsidian交流聊天反馈群：https://blog.discoverlabs.ac.cn/posts/0000-obsid
 
 ![Obsidian交流聊天反馈群二维码](https://blog.discoverlabs.ac.cn/img/wechat-publisher/feedback-group-qr.png)
 
-> v1.1.0 更新：新增微信贴图（图片消息）发布，通过标准 Markdown 模板管理标题、封面、图片和可选正文，最多支持 20 张图片。
+> v1.1.1 更新：插件改为仅桌面端运行，手机端不会加载插件，避免误触和打开 Markdown 时产生额外卡顿；同时保留 v1.1.0 新增的微信贴图（图片消息）发布能力。
 >
 > v1.0.5 更新：修复未手动设置封面时，正文第一张本地图片作为封面可能读取失败的问题。
 >
@@ -133,6 +133,10 @@ WeChat Publisher 已经上架 Obsidian 官方社区插件市场，推荐直接�
 插件页面：https://community.obsidian.md/plugins/wechat-publisher
 
 完整使用教程、截图说明和常见问题见：https://blog.discoverlabs.ac.cn/downloads/wechat-publisher/
+
+### 使用平台
+
+WeChat Publisher 是**仅桌面端插件**。插件不会在 Obsidian 手机端加载，避免误触，也不会在手机打开 Markdown 时注册预览监听和额外处理。电脑端安装并启用即可正常使用；手机端无需配置。
 
 ### 方式二：备用安装
 

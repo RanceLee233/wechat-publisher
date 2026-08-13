@@ -1,11 +1,11 @@
 {
   "id": "wechat-publisher",
   "name": "WeChat Publisher",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minAppVersion": "1.5.0",
   "description": "微信公众号发布工具 | Publish WeChat Official Account articles with formatting, image upload, and draft push.",
   "author": "RanceLee",
   "authorUrl": "https://github.com/RanceLee233",
   "fundingUrl": "https://blog.discoverlabs.ac.cn/downloads/wechat-publisher/",
-  "isDesktopOnly": false
+  "isDesktopOnly": true
 }
