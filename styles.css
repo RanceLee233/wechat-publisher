@@ -1401,3 +1401,53 @@
     justify-content: flex-start;
   }
 }
+
+/* Publisher workbench: document context above deliberate actions. */
+.wechat-publisher-view { container-type: inline-size; }
+.wp-toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+.wp-document-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px 10px; }
+.wp-document-row .wp-cover { width: 42px; height: 48px; }
+.wp-document-row .wp-title { font-size: 15px; }
+.wp-document-row .wp-meta { padding: 2px; }
+.wp-control-label { color: var(--text-muted); font-size: 11px; }
+.wp-action-row { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--background-modifier-border); }
+.wp-action-spacer { flex: 1; }
+.wp-action-row .wp-copy-action { width: auto; gap: 6px; padding: 0 10px; font-size: 12px; }
+.wp-action-row .wp-primary { min-height: 34px; }
+.wp-action-row .wp-theme-pill { border-radius: 5px; }
+.wechat-publisher-view :is(button, [role="button"]):focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+.wechat-publisher-view button.wp-menu-item, .wechat-publisher-view button.wp-account-item { width: 100%; height: auto; box-shadow: none; border: 0; background: transparent; color: var(--text-normal); text-align: left; white-space: normal; font: inherit; }
+.wechat-publisher-view button.wp-menu-item:hover, .wechat-publisher-view button.wp-account-item:hover { background: var(--background-modifier-hover); }
+.wechat-publisher-view button.current { background: var(--background-secondary); }
+.wp-action-row .wp-theme-menu { left: 0; right: auto; width: 320px; min-width: 0; max-width: calc(100cqw - 32px); max-height: min(560px, 65vh); padding: 10px; }
+.wp-theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.wp-theme-grid .wp-theme-item-desc { display: none; }
+.wp-theme-grid .wp-theme-menu-item { align-items: center; padding: 10px 8px; }
+.wp-theme-swatch { width: 12px; height: 20px; border-radius: 3px; flex-shrink: 0; }
+.wp-theme-section-header { font-size: 12px; letter-spacing: 0; padding: 10px 8px 6px; }
+.wp-status { font-size: 11px; padding: 8px 16px; color: var(--text-muted); }
+.wp-community { max-width: 480px; line-height: 1.7; }
+.wp-community img { display: block; width: 260px; max-width: 100%; margin: 20px auto; border-radius: 8px; }
+.wp-community a { margin: 8px 8px 8px 0; display: inline-block; }
+@container (max-width: 420px) {
+  .wp-document-row { flex-wrap: wrap; gap: 8px; padding: 10px; }
+  .wp-document-row .wp-meta { flex-basis: 100%; }
+  .wp-action-row { padding: 8px 10px; gap: 5px; flex-wrap: wrap; }
+  .wp-action-row .wp-copy-action { padding: 0 6px; }
+}
+.wechat-publisher-view .wp-copy-action { display: inline-flex; align-items: center; justify-content: center; }
+.wechat-publisher-view button.wp-primary { background: var(--interactive-accent); color: var(--text-on-accent); }
+.wp-drawer:not(.open) { visibility: hidden; }
+.wp-drawer.open { max-height: min(420px, 55vh); overflow-y: auto; }
+@media (prefers-reduced-motion: reduce) { .wechat-publisher-view * { transition: none; } }
+
+/* List markers follow article text, including dark article themes. */
+.wechat-publisher-view .wxp-root li::marker { color: inherit; }
+
+/* Quiet community actions, separate from publishing controls. */
+.wechat-publisher-view .wp-menu { width: 280px; min-width: 0; max-width: calc(100cqw - 20px); max-height: 70vh; overflow-y: auto; }
+.wp-menu-item--skill .wp-menu-icon { color: var(--text-accent); }
+.wp-menu-description { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+.wp-menu-new { flex-shrink: 0; padding: 2px 5px; border-radius: 4px; font-size: 10px; line-height: 1.5; color: var(--text-normal); background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-primary)); }
+.wp-menu-item--support .wp-menu-icon { color: #B9651B; }
+.theme-dark .wp-menu-item--support .wp-menu-icon { color: #F3AD65; }

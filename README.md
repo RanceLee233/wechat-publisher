@@ -2,7 +2,7 @@
 
 > **Send articles from Obsidian to the WeChat Official Account draft box.**
 >
-> WeChat Publisher converts articles written in Obsidian into WeChat-compatible content and submits them to the Official Account draft box. It handles formatting and image preparation; you review and publish the draft in WeChat. **Free for personal use**, please don't use it for commercial purposes.
+> WeChat Publisher converts articles written in Obsidian into WeChat-compatible content and submits them to the Official Account draft box. It handles formatting and image preparation; you review and publish the draft in WeChat. **Free for personal use**, licensed under MIT.
 >
 > 👇 中文文档见下方
 
@@ -23,6 +23,8 @@ WeChat Publisher 是一个 Obsidian 插件，核心用途是把你写好的文�
 Obsidian交流聊天反馈群：https://blog.discoverlabs.ac.cn/posts/0000-obsidian交流聊天反馈群/
 
 ![Obsidian交流聊天反馈群二维码](https://blog.discoverlabs.ac.cn/img/wechat-publisher/feedback-group-qr.png)
+
+> **v1.2.0 更新（2026-09-08）**：双层工作台、4 款个性主题（共 17 款）、免费 Agent Skill、自愿赞赏入口。更新包不包含用户配置，原有字号、间距与保存的方案继续保留。
 
 > v1.1.1 更新：插件改为仅桌面端运行，手机端不会加载插件，避免误触和打开 Markdown 时产生额外卡顿；同时保留 v1.1.0 新增的微信贴图（图片消息）发布能力。
 >
@@ -157,34 +159,34 @@ https://blog.discoverlabs.ac.cn/downloads/wechat-publisher/
 
 启用后，点击 Obsidian 左侧边栏的 **WeChat Publisher 图标**，或按 `Cmd/Ctrl+P` 搜索 `WeChat Publisher` 打开预览面板。
 
-![插件界面](https://cf-img.discoverlabs.ac.cn/20260327265d84010f9ccf2a4d288d9ac8f2dccc.webp)
+![旧版插件界面（新版功能位置见下方说明）](https://cf-img.discoverlabs.ac.cn/20260327265d84010f9ccf2a4d288d9ac8f2dccc.webp)
 
-v0.1.11 起，界面改为**单行工具栏 + 可展开抽屉**的设计，和 Obsidian 原生风格一致。工具栏从左到右依次为：
+v1.2.0 起，预览面板使用**双层工作台 + 可展开资料抽屉**。先确认稿件与账号，再选择排版和发布动作。
 
 | 区域 | 说明 |
-|------|------|
-| **元信息卡** | 封面缩略 + 标题 + 「作者 · 封面状态 · 点击编辑 →」，点击展开抽屉编辑本次发布的标题/作者/封面 |
-| **账号胶囊** | 当前账号名 + 状态圆点（绿=已就绪 / 橙=未填写 AppID/AppSecret / 灰=未配置）；点击切换账号 |
-| **主题/排版胶囊** | 显示当前主题（如「湖水青」），点击弹出主题/排版速切面板 |
-| **🔄 刷新渲染** · **📋 复制 HTML** | 工具图标，悬停显示完整名称 |
-| **发布草稿** | 主按钮，一键发布到公众号草稿箱 |
-| **⋯ 更多** | 新建贴图、去公众号粘贴、去今日头条发布、滚动同步、隐藏工具栏、账号配置、用户指南、关于 / 联系作者 |
+| --- | --- |
+| **上层：稿件资料** | 封面缩略、标题、作者与封面状态；点击编辑本次发布资料，不回写笔记 |
+| **上层：发布到** | 显示当前公众号账号，点击切换或管理账号 |
+| **下层：格式** | 主题网格、排版模板、高级微调 / 我的方案 |
+| **下层：复制排版** | 复制微信兼容的 HTML，便于手动粘贴 |
+| **下层：发布草稿** | 提交到公众号草稿箱，最终发布仍由你在微信后台完成 |
+| **下层：⋯ 更多** | 刷新预览、新建贴图、跳转发布后台、滚动同步、隐藏工具栏、账号配置与帮助；底部有 Skill 下载和自愿赞赏 |
 
 **隐藏工具栏** → 顶部出现「⌄ 显示工具栏」吊签，预览区扩展到全屏。
 
 ### 格式与主题
 
-点击工具栏的**主题/排版胶囊**，弹出速切面板：
+点击工具栏的**格式**，弹出速切面板：
 
-- **上半：主题风格** —— 13 个内置主题（经典蓝、石墨灰、枫糖棕、薄荷绿、朝阳橙、湖水青、报刊风、森林绿，v0.1.11 新增：极简白 / 编辑部 / 墨卡 / 暖栗色 / 技术流），附简短描述，点击即切换
-- **下半：排版模板** —— 均衡版 / 紧凑版 / 舒展版 / 专栏版，控制字号、行距和留白节奏
-- **顶部：高级微调 / 我的方案…** —— 打开弹窗做细粒度调整（两端缩进、h1~h4 样式、callout、代码块主题等）或套用保存过的方案；调整时会实时刷新预览
+- **主题风格** —— 17 个内置主题（经典蓝、石墨灰、枫糖棕、薄荷绿、朝阳橙、湖水青、报刊风、森林绿，v0.1.11 新增：极简白 / 编辑部 / 墨卡 / 暖栗色 / 技术流；新增：纸上烧橙 / 电光紫 / 霓虹终端 / 酸性印刷），网格展示，点击即切换
+- **排版模板** —— 均衡版 / 紧凑版 / 舒展版 / 专栏版，控制字号、行距和留白节奏
+- **底部：高级微调 / 我的方案…** —— 打开弹窗做细粒度调整（两端缩进、h1~h4 样式、callout、代码块主题等）或套用保存过的方案；调整时会实时刷新预览
 
 **一键切换**即刻刷新预览，不会遮挡文章内容。
 
 ### 刷新渲染
 
-插件会在你切换笔记时自动重新渲染预览。如果感觉预览没有及时更新，可点击**刷新渲染**按钮手动触发。
+插件会在你切换笔记时自动重新渲染预览。如果感觉预览没有及时更新，可点击「⋯ → 刷新预览」手动触发。
 
 ### 双向滚动同步
 
@@ -200,7 +202,7 @@ v0.1.11 起，界面改为**单行工具栏 + 可展开抽屉**的设计，和 O
 
 ### 复制 HTML
 
-点击顶部的**复制 HTML** 按钮，插件会将当前预览区的渲染结果复制为微信兼容的 HTML。
+点击顶部的**复制排版**按钮，插件会将当前预览区的渲染结果复制为微信兼容的 HTML。
 
 复制完成后，打开微信公众号后台编辑器，在正文区域直接粘贴即可。适合不需要直连 API、手动上传文章的场景。
 
@@ -364,3 +366,39 @@ wechat-type: 贴图
 ## License
 
 [MIT](LICENSE)
+
+
+## 新版工作台、赞赏与 Agent Skill
+
+预览顶部分成两层：上层展示稿件标题、封面和发布账号，点击稿件资料编辑标题、作者和封面；下层依次为「格式」「复制排版」「发布草稿」和「更多」。只有「发布草稿」会提交到微信公众号草稿箱；复制排版用于手动粘贴。
+
+「格式」面板先展示主题网格，再展示排版模板，最后是「高级微调 / 我的方案」。刷新预览、滚动同步、贴图、帮助等低频操作集中在「更多」。菜单支持 Tab、Enter 和空格，Esc 关闭菜单并返回入口。
+
+### 请我喝杯咖啡 · Buy me a coffee
+
+如果插件帮你省下了时间，欢迎自愿赞赏，支持持续维护。赞赏不会解锁额外功能，所有功能仍然免费。插件「更多」及「关于」中也可以打开收款码。
+
+<img src="https://cf-img.discoverlabs.ac.cn/202609086d6edce6203e09d67a50095457373cbe.webp" alt="微信扫码，自愿赞赏作者" width="260" />
+
+### 下载 Agent Skill
+
+[下载 wechat-draft Skill（ZIP）](https://github.com/RanceLee233/wechat-publisher/raw/main/downloads/wechat-draft.zip) · [查看 Skill](https://github.com/RanceLee233/wechat-publisher/tree/main/skills/wechat-draft)
+
+解压后把 `wechat-draft` 文件夹放进 Agent 的 skills 目录。Codex 默认目录为 `~/.codex/skills/`；Kimi Code 等 Agent 请使用其本机配置指定的 skills 目录。需要 Node.js 22 或更新版本，无需 npm 安装依赖。
+
+首次使用，请按自己的环境修改 `SKILL.md` 的首次配置区，将示例配置复制到仓库外的私有目录，再填入你自己的公众号 AppID、AppSecret 和封面。不要把密钥填进 SKILL.md 或上传 GitHub；不需要额外的大模型 API key。
+
+可以对 Agent 说：「用 wechat-draft 把这篇 Markdown 排成经典蓝，先给我预览。」确认后再要求发送到微信草稿箱。支持 17 个主题、排版模板、PNG/JPEG 本地图片直传微信和指定草稿 ID 更新；不使用第三方图床，不执行正式发布或群发。独立 Skill 暂不支持 Obsidian Wiki 图片、公式和 Mermaid，请先转成标准图片。
+
+### 四款个性主题
+
+在「格式 → 主题风格」中选择，插件与 Agent Skill 共提供 17 款主题。
+
+| 主题 | 配色与用途 | Skill 主题 ID |
+| --- | --- | --- |
+| 纸上烧橙 | 奶油纸色、烧橙标题，适合随笔与个人专栏 | `paper-orange` |
+| 电光紫 | 浅冷底、电紫与青色细节，适合 AI 和新工具 | `electric-violet` |
+| 霓虹终端 | 深蓝黑底、电青标题与玫红点缀，适合技术专题 | `neon-terminal` |
+| 酸性印刷 | 黑白正文、荧光黄绿重点标记，适合观点与清单 | `acid-print` |
+
+新增主题不会自动切换当前选择；切换主题也会保留你的字号、行距和“我的方案”。已设置的自定义主色、页面底色仍优先；如希望使用主题原配色，请在高级微调中清除对应的颜色覆盖。深色主题的微信夜间模式效果请以微信实际预览为准。
