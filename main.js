@@ -231799,6 +231799,9 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
     });
     this.copyButtonEl.createSpan({ text: "\u590D\u5236\u6392\u7248" });
     this.copyButtonEl.addClass("wp-copy-action");
+    this.renderIconButton(actionRow, "refresh", "\u5237\u65B0\u9884\u89C8", () => {
+      void this.refresh();
+    });
     actionRow.createDiv({ cls: "wp-action-spacer" });
     const primaryBtn = actionRow.createEl("button", { cls: "wp-primary" });
     primaryBtn.setAttr("title", "\u53D1\u5E03\u5230\u5FAE\u4FE1\u516C\u4F17\u53F7\u8349\u7A3F\u7BB1");
@@ -232182,10 +232185,6 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
   populateMoreMenu() {
     if (!this.moreMenuEl) return;
     this.moreMenuEl.empty();
-    this.addMoreMenuItem("refresh", "\u5237\u65B0\u9884\u89C8", null, () => {
-      this.closeMoreMenu();
-      void this.refresh();
-    });
     this.addMoreMenuItem("plus", "\u65B0\u5EFA\u8D34\u56FE", null, () => {
       this.closeMoreMenu();
       void this.plugin.createNewspicNote();
