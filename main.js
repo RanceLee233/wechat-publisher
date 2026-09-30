@@ -234798,6 +234798,48 @@ async function resolveVaultBinaryAsset(app, sourceFile, rawLink) {
     filePath: safeGetAdapterFullPath(app, file.path)
   };
 }
+async function resolveObsidianResourceUrlBinaryAsset(app, url) {
+  // Obsidian 渲染本地图片后 src 形如 app://<vaultKey>/<绝对路径>?<时间戳>，
+  // requestUrl 无法拉取 app://，这里剥掉 scheme/vaultKey/query 还原绝对路径，
+  // 在 vault 中定位文件后直接 readBinary。
+  try {
+    if (!/^app:/i.test(url)) {
+      return null;
+    }
+    const noQuery = url.indexOf("?") >= 0 ? url.slice(0, url.indexOf("?")) : url;
+    const firstSlash = noQuery.indexOf("/", "app://".length);
+    if (firstSlash < 0) {
+      return null;
+    }
+    const absPath = decodeURIComponent(noQuery.slice(firstSlash));
+    const files = app.vault.getFiles();
+    for (const f of files) {
+      let fullPath;
+      try {
+        fullPath = app.vault.adapter.getFullPath(f.path);
+      } catch {
+        continue;
+      }
+      if (fullPath === absPath) {
+        const mimeType = getMimeTypeByPath(f.path);
+        if (!mimeType) {
+          return null;
+        }
+        const binary = await app.vault.readBinary(f);
+        return {
+          bytes: new Uint8Array(binary),
+          contentType: mimeType,
+          filename: f.name,
+          sourceUrl: url,
+          filePath: fullPath
+        };
+      }
+    }
+  } catch (error3) {
+    console.warn("[wechat-publisher] \u89E3\u6790 Obsidian \u8D44\u6E90 URL \u5931\u8D25", error3);
+  }
+  return null;
+}
 async function resolveCoverAsset(app, file, coverValue) {
   if (/^(https?:|data:)/i.test(coverValue)) {
     return fetchBinaryAsset(coverValue);
@@ -234807,6 +234849,12 @@ async function resolveCoverAsset(app, file, coverValue) {
     return localAsset;
   }
   const resolvedCoverUrl = await resolveAssetLinkForWechat(app, file, coverValue) ?? coverValue;
+  if (/^app:/i.test(resolvedCoverUrl)) {
+    const appAsset = await resolveObsidianResourceUrlBinaryAsset(app, resolvedCoverUrl);
+    if (appAsset) {
+      return appAsset;
+    }
+  }
   return fetchBinaryAsset(resolvedCoverUrl);
 }
 async function resolveArticleImageAsset(app, file, source) {
@@ -234839,6 +234887,12 @@ async function resolveArticleImageAsset(app, file, source) {
   if (/^https?:/i.test(source)) {
     return fetchBinaryAsset(source);
   }
+  if (/^app:/i.test(source)) {
+    const appAsset = await resolveObsidianResourceUrlBinaryAsset(app, source);
+    if (appAsset) {
+      return appAsset;
+    }
+  }
   const vaultAsset = await resolveVaultBinaryAsset(app, file, source);
   if (vaultAsset) {
     return vaultAsset;
@@ -234849,6 +234903,12 @@ async function resolveArticleImageAsset(app, file, source) {
   }
   const resolvedSource = await resolveAssetLinkForWechat(app, file, source) ?? source;
   if (resolvedSource !== source) {
+    if (/^app:/i.test(resolvedSource)) {
+      const appAsset = await resolveObsidianResourceUrlBinaryAsset(app, resolvedSource);
+      if (appAsset) {
+        return appAsset;
+      }
+    }
     return fetchBinaryAsset(resolvedSource);
   }
   throw new Error(`\u65E0\u6CD5\u89E3\u6790\u672C\u5730\u56FE\u7247\u8DEF\u5F84\uFF1A${source}`);
