@@ -52347,9 +52347,20 @@ function buildRenderer(styleProfile) {
   };
   renderer.link = ({ href, text }) => `<a href="${href}">${text}</a>`;
   renderer.listitem = function({ tokens }) {
-    const inlineTokens = tokens.filter((token) => token.type !== "list");
-    const blockTokens = tokens.filter((token) => token.type === "list");
-    const inlineHtml = inlineTokens.length > 0 ? this.parser.parseInline(inlineTokens) : "";
+    const inlineParts = [];
+    const blockTokens = [];
+    for (const token of tokens) {
+      if (token.type === "space") {
+        continue;
+      }
+      if (blockTokens.length === 0 && (token.type === "text" || token.type === "paragraph")) {
+        const childTokens = token.tokens;
+        inlineParts.push(childTokens ? this.parser.parseInline(childTokens) : escapeHtml(token.raw));
+        continue;
+      }
+      blockTokens.push(token);
+    }
+    const inlineHtml = inlineParts.join("<br>");
     const blockHtml = blockTokens.length > 0 ? this.parser.parse(blockTokens) : "";
     return inlineHtml ? `<li><span class="wxp-li-paragraph">${inlineHtml}</span>${blockHtml}</li>` : `<li>${blockHtml}</li>`;
   };

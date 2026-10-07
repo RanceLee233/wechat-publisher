@@ -229635,9 +229635,20 @@ function buildRenderer(styleProfile) {
   };
   renderer12.link = ({ href, text: text6 }) => `<a href="${href}">${text6}</a>`;
   renderer12.listitem = function({ tokens: tokens2 }) {
-    const inlineTokens = tokens2.filter((token2) => token2.type !== "list");
-    const blockTokens = tokens2.filter((token2) => token2.type === "list");
-    const inlineHtml = inlineTokens.length > 0 ? this.parser.parseInline(inlineTokens) : "";
+    const inlineParts = [];
+    const blockTokens = [];
+    for (const token2 of tokens2) {
+      if (token2.type === "space") {
+        continue;
+      }
+      if (blockTokens.length === 0 && (token2.type === "text" || token2.type === "paragraph")) {
+        const childTokens = token2.tokens;
+        inlineParts.push(childTokens ? this.parser.parseInline(childTokens) : escapeHtml(token2.raw));
+        continue;
+      }
+      blockTokens.push(token2);
+    }
+    const inlineHtml = inlineParts.join("<br>");
     const blockHtml = blockTokens.length > 0 ? this.parser.parse(blockTokens) : "";
     return inlineHtml ? `<li><span class="wxp-li-paragraph">${inlineHtml}</span>${blockHtml}</li>` : `<li>${blockHtml}</li>`;
   };
@@ -233391,17 +233402,21 @@ function addNumberField(options3) {
     });
   });
 }
+var lastStyleModalPosition = null;
 var StyleConfigModal = class extends import_obsidian8.Modal {
   constructor(plugin23) {
     super(plugin23.app);
     this.plugin = plugin23;
   }
   presetNameDraft = "";
+  dragReady = false;
   onOpen() {
     const { titleEl, contentEl } = this;
     titleEl.setText("\u9AD8\u7EA7\u5FAE\u8C03");
     contentEl.empty();
     this.modalEl.addClass("wechat-publisher-style-modal");
+    this.containerEl.addClass("wechat-publisher-style-modal-container");
+    this.setupFloatingPanel();
     this.buildSavedPresetsSection(contentEl);
     this.buildTypographySection(contentEl);
     this.buildHeadingSection(contentEl);
@@ -233428,6 +233443,60 @@ var StyleConfigModal = class extends import_obsidian8.Modal {
   onClose() {
     this.modalEl.removeClass("wechat-publisher-style-modal");
     this.contentEl.empty();
+  }
+  /**
+   * 高级微调需要边调边看预览：面板改为无遮罩浮窗，背后预览可滚动，
+   * 按住标题栏可拖到任意位置。
+   */
+  setupFloatingPanel() {
+    if (this.dragReady) {
+      return;
+    }
+    this.dragReady = true;
+    const { modalEl } = this;
+    const handleEl = modalEl.querySelector(".modal-header") ?? this.titleEl;
+    handleEl.addClass("wechat-publisher-style-drag-handle");
+    handleEl.setAttr("title", "\u6309\u4F4F\u62D6\u52A8\u9762\u677F");
+    const applyPosition = (left3, top2) => {
+      const maxLeft = Math.max(0, window.innerWidth - Math.min(modalEl.offsetWidth, window.innerWidth));
+      const maxTop = Math.max(0, window.innerHeight - 48);
+      const clampedLeft = clamp(left3, 0, maxLeft);
+      const clampedTop = clamp(top2, 0, maxTop);
+      modalEl.addClass("is-positioned");
+      modalEl.style.left = `${clampedLeft}px`;
+      modalEl.style.top = `${clampedTop}px`;
+      lastStyleModalPosition = { left: clampedLeft, top: clampedTop };
+    };
+    if (lastStyleModalPosition) {
+      window.requestAnimationFrame(() => {
+        if (lastStyleModalPosition) {
+          applyPosition(lastStyleModalPosition.left, lastStyleModalPosition.top);
+        }
+      });
+    }
+    handleEl.addEventListener("pointerdown", (event3) => {
+      if (event3.button !== 0 || event3.target.closest(".modal-close-button")) {
+        return;
+      }
+      const rect3 = modalEl.getBoundingClientRect();
+      const offsetX = event3.clientX - rect3.left;
+      const offsetY = event3.clientY - rect3.top;
+      handleEl.setPointerCapture(event3.pointerId);
+      modalEl.addClass("is-dragging");
+      event3.preventDefault();
+      const onMove = (moveEvent) => {
+        applyPosition(moveEvent.clientX - offsetX, moveEvent.clientY - offsetY);
+      };
+      const onUp = () => {
+        modalEl.removeClass("is-dragging");
+        handleEl.removeEventListener("pointermove", onMove);
+        handleEl.removeEventListener("pointerup", onUp);
+        handleEl.removeEventListener("pointercancel", onUp);
+      };
+      handleEl.addEventListener("pointermove", onMove);
+      handleEl.addEventListener("pointerup", onUp);
+      handleEl.addEventListener("pointercancel", onUp);
+    });
   }
   buildSavedPresetsSection(container2) {
     const section = this.createSection(

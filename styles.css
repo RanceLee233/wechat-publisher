@@ -1331,6 +1331,35 @@
   overflow-y: auto;
 }
 
+/* 高级微调：无遮罩浮窗，背后的预览可见、可滚动 */
+.wechat-publisher-style-modal-container {
+  pointer-events: none;
+}
+
+.wechat-publisher-style-modal-container .modal-bg {
+  opacity: 0 !important;
+}
+
+.wechat-publisher-style-modal-container .wechat-publisher-style-modal {
+  pointer-events: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+}
+
+.wechat-publisher-style-modal.is-positioned {
+  position: fixed;
+  margin: 0;
+}
+
+.wechat-publisher-style-drag-handle {
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+
+.wechat-publisher-style-modal.is-dragging {
+  opacity: 0.92;
+}
+
 .wechat-publisher-style-section {
   margin-bottom: 16px;
   padding: 14px;
