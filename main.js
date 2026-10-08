@@ -43575,19 +43575,19 @@ function copy(source, target) {
   return target.domain(source.domain()).range(source.range()).interpolate(source.interpolate()).clamp(source.clamp()).unknown(source.unknown());
 }
 function transformer() {
-  var domain = unit, range3 = unit, interpolate = value_default, transform8, untransform, unknown, clamp2 = identity2, piecewise, output2, input;
+  var domain = unit, range3 = unit, interpolate = value_default, transform8, untransform, unknown, clamp3 = identity2, piecewise, output2, input;
   function rescale() {
     var n2 = Math.min(domain.length, range3.length);
-    if (clamp2 !== identity2) clamp2 = clamper(domain[0], domain[n2 - 1]);
+    if (clamp3 !== identity2) clamp3 = clamper(domain[0], domain[n2 - 1]);
     piecewise = n2 > 2 ? polymap : bimap;
     output2 = input = null;
     return scale3;
   }
   function scale3(x6) {
-    return x6 == null || isNaN(x6 = +x6) ? unknown : (output2 || (output2 = piecewise(domain.map(transform8), range3, interpolate)))(transform8(clamp2(x6)));
+    return x6 == null || isNaN(x6 = +x6) ? unknown : (output2 || (output2 = piecewise(domain.map(transform8), range3, interpolate)))(transform8(clamp3(x6)));
   }
   scale3.invert = function(y6) {
-    return clamp2(untransform((input || (input = piecewise(range3, domain.map(transform8), number_default)))(y6)));
+    return clamp3(untransform((input || (input = piecewise(range3, domain.map(transform8), number_default)))(y6)));
   };
   scale3.domain = function(_3) {
     return arguments.length ? (domain = Array.from(_3, number3), rescale()) : domain.slice();
@@ -43599,7 +43599,7 @@ function transformer() {
     return range3 = Array.from(_3), interpolate = round_default, rescale();
   };
   scale3.clamp = function(_3) {
-    return arguments.length ? (clamp2 = _3 ? true : identity2, rescale()) : clamp2 !== identity2;
+    return arguments.length ? (clamp3 = _3 ? true : identity2, rescale()) : clamp3 !== identity2;
   };
   scale3.interpolate = function(_3) {
     return arguments.length ? (interpolate = _3, rescale()) : interpolate;
@@ -91369,7 +91369,7 @@ var init_cytoscape_esm = __esm({
         return true;
       };
       var wheelHandler = function wheelHandler2(e3) {
-        var clamp2 = false;
+        var clamp3 = false;
         var delta = e3.deltaY;
         if (delta == null) {
           if (e3.wheelDeltaY != null) {
@@ -91396,7 +91396,7 @@ var init_cytoscape_esm = __esm({
             }
           } else {
             wheelDeltas.push(delta);
-            clamp2 = true;
+            clamp3 = true;
           }
         } else if (inaccurateScrollDevice) {
           inaccurateScrollFactor = Math.min(Math.abs(delta), inaccurateScrollFactor);
@@ -91423,7 +91423,7 @@ var init_cytoscape_esm = __esm({
             r2.redraw();
           }, 150);
           var diff2;
-          if (clamp2 && Math.abs(delta) > 5) {
+          if (clamp3 && Math.abs(delta) > 5) {
             delta = signum(delta) * 5;
           }
           diff2 = delta / -250;
@@ -230434,6 +230434,66 @@ function pruneCoverMediaRecords(coverMediaRecords) {
   }).slice(0, COVER_MEDIA_RECORD_LIMIT);
 }
 
+// src/draggable-modal.ts
+var lastPositions = /* @__PURE__ */ new Map();
+var initializedModals = /* @__PURE__ */ new WeakSet();
+function clamp(value2, min9, max10) {
+  return Math.min(Math.max(value2, min9), max10);
+}
+function makeModalDraggable(modal, options3) {
+  const { modalEl, containerEl, titleEl } = modal;
+  if (options3.floating) {
+    containerEl.addClass("wechat-publisher-floating-modal-container");
+  }
+  if (initializedModals.has(modal)) {
+    return;
+  }
+  initializedModals.add(modal);
+  modalEl.addClass("wechat-publisher-draggable-modal");
+  const parentEl = titleEl.parentElement;
+  const handleEl = parentEl?.hasClass("modal-header") ? parentEl : titleEl;
+  handleEl.addClass("wechat-publisher-drag-handle");
+  handleEl.setAttr("title", "\u6309\u4F4F\u62D6\u52A8");
+  const applyPosition = (left3, top2) => {
+    const maxLeft = Math.max(0, window.innerWidth - Math.min(modalEl.offsetWidth, window.innerWidth));
+    const maxTop = Math.max(0, window.innerHeight - 48);
+    const clampedLeft = clamp(left3, 0, maxLeft);
+    const clampedTop = clamp(top2, 0, maxTop);
+    modalEl.addClass("is-positioned");
+    modalEl.style.left = `${clampedLeft}px`;
+    modalEl.style.top = `${clampedTop}px`;
+    lastPositions.set(options3.positionKey, { left: clampedLeft, top: clampedTop });
+  };
+  const saved = lastPositions.get(options3.positionKey);
+  if (saved) {
+    window.requestAnimationFrame(() => applyPosition(saved.left, saved.top));
+  }
+  handleEl.addEventListener("pointerdown", (event3) => {
+    const target = event3.target;
+    if (event3.button !== 0 || target.closest(".modal-close-button, .modal-header-button, button, a, input, select, textarea")) {
+      return;
+    }
+    const rect3 = modalEl.getBoundingClientRect();
+    const offsetX = event3.clientX - rect3.left;
+    const offsetY = event3.clientY - rect3.top;
+    handleEl.setPointerCapture(event3.pointerId);
+    modalEl.addClass("is-dragging");
+    event3.preventDefault();
+    const onMove = (moveEvent) => {
+      applyPosition(moveEvent.clientX - offsetX, moveEvent.clientY - offsetY);
+    };
+    const onUp = () => {
+      modalEl.removeClass("is-dragging");
+      handleEl.removeEventListener("pointermove", onMove);
+      handleEl.removeEventListener("pointerup", onUp);
+      handleEl.removeEventListener("pointercancel", onUp);
+    };
+    handleEl.addEventListener("pointermove", onMove);
+    handleEl.addEventListener("pointerup", onUp);
+    handleEl.addEventListener("pointercancel", onUp);
+  });
+}
+
 // src/account-modal.ts
 function runAsync(action) {
   void action().catch((error3) => {
@@ -230474,6 +230534,7 @@ var AccountConfigModal = class extends import_obsidian.Modal {
   selectedIndex = 0;
   showPasteImport = false;
   onOpen() {
+    makeModalDraggable(this, { positionKey: "account" });
     const { contentEl, titleEl } = this;
     titleEl.setText("\u516C\u4F17\u53F7\u8D26\u53F7\u914D\u7F6E");
     contentEl.empty();
@@ -230704,6 +230765,7 @@ var FormatModal = class extends import_obsidian2.Modal {
     this.plugin = plugin23;
   }
   onOpen() {
+    makeModalDraggable(this, { positionKey: "format", floating: true });
     const { contentEl, titleEl } = this;
     titleEl.setText("\u683C\u5F0F");
     contentEl.empty();
@@ -231611,6 +231673,7 @@ var CommunityModal = class extends import_obsidian4.Modal {
     this.mode = mode;
   }
   onOpen() {
+    makeModalDraggable(this, { positionKey: "community" });
     this.contentEl.addClass("wp-community");
     this.titleEl.setText(this.mode === "support" ? "\u8BF7\u6211\u559D\u676F\u5496\u5561" : "\u8BA9 Agent \u5E2E\u4F60\u6392\u7248\u548C\u53D1\u9001\u8349\u7A3F");
     if (this.mode === "support") {
@@ -233166,6 +233229,7 @@ var AboutModal = class extends import_obsidian7.Modal {
     this.plugin = plugin23;
   }
   onOpen() {
+    makeModalDraggable(this, { positionKey: "about" });
     const { contentEl, titleEl } = this;
     titleEl.setText("\u5173\u4E8E WeChat Publisher");
     contentEl.empty();
@@ -233324,7 +233388,7 @@ var FIGURE_CAPTION_OPTIONS = [
   { value: "alt-only", label: "\u53EA\u663E\u793A alt" },
   { value: "none", label: "\u4E0D\u663E\u793A" }
 ];
-function clamp(value2, min9, max10) {
+function clamp2(value2, min9, max10) {
   return Math.min(max10, Math.max(min9, value2));
 }
 function countDecimals(step3) {
@@ -233375,9 +233439,9 @@ function addNumberField(options3) {
     sliderRef = slider;
     slider.setLimits(options3.min, options3.max, options3.step);
     slider.setDynamicTooltip();
-    slider.setValue(clamp(options3.value, options3.min, options3.max));
+    slider.setValue(clamp2(options3.value, options3.min, options3.max));
     slider.onChange((value2) => {
-      const normalized = clamp(value2, options3.min, options3.max);
+      const normalized = clamp2(value2, options3.min, options3.max);
       inputRef?.setValue(formatNumber(normalized, options3.step));
       options3.onChange(normalized);
       options3.afterChange?.();
@@ -233392,7 +233456,7 @@ function addNumberField(options3) {
       if (!Number.isFinite(parsed)) {
         return;
       }
-      const normalized = clamp(parsed, options3.min, options3.max);
+      const normalized = clamp2(parsed, options3.min, options3.max);
       sliderRef?.setValue(normalized);
       if (rawValue !== formatNumber(normalized, options3.step)) {
         text6.setValue(formatNumber(normalized, options3.step));
@@ -233402,21 +233466,18 @@ function addNumberField(options3) {
     });
   });
 }
-var lastStyleModalPosition = null;
 var StyleConfigModal = class extends import_obsidian8.Modal {
   constructor(plugin23) {
     super(plugin23.app);
     this.plugin = plugin23;
   }
   presetNameDraft = "";
-  dragReady = false;
   onOpen() {
     const { titleEl, contentEl } = this;
     titleEl.setText("\u9AD8\u7EA7\u5FAE\u8C03");
     contentEl.empty();
     this.modalEl.addClass("wechat-publisher-style-modal");
-    this.containerEl.addClass("wechat-publisher-style-modal-container");
-    this.setupFloatingPanel();
+    makeModalDraggable(this, { positionKey: "style-config", floating: true });
     this.buildSavedPresetsSection(contentEl);
     this.buildTypographySection(contentEl);
     this.buildHeadingSection(contentEl);
@@ -233443,60 +233504,6 @@ var StyleConfigModal = class extends import_obsidian8.Modal {
   onClose() {
     this.modalEl.removeClass("wechat-publisher-style-modal");
     this.contentEl.empty();
-  }
-  /**
-   * 高级微调需要边调边看预览：面板改为无遮罩浮窗，背后预览可滚动，
-   * 按住标题栏可拖到任意位置。
-   */
-  setupFloatingPanel() {
-    if (this.dragReady) {
-      return;
-    }
-    this.dragReady = true;
-    const { modalEl } = this;
-    const handleEl = modalEl.querySelector(".modal-header") ?? this.titleEl;
-    handleEl.addClass("wechat-publisher-style-drag-handle");
-    handleEl.setAttr("title", "\u6309\u4F4F\u62D6\u52A8\u9762\u677F");
-    const applyPosition = (left3, top2) => {
-      const maxLeft = Math.max(0, window.innerWidth - Math.min(modalEl.offsetWidth, window.innerWidth));
-      const maxTop = Math.max(0, window.innerHeight - 48);
-      const clampedLeft = clamp(left3, 0, maxLeft);
-      const clampedTop = clamp(top2, 0, maxTop);
-      modalEl.addClass("is-positioned");
-      modalEl.style.left = `${clampedLeft}px`;
-      modalEl.style.top = `${clampedTop}px`;
-      lastStyleModalPosition = { left: clampedLeft, top: clampedTop };
-    };
-    if (lastStyleModalPosition) {
-      window.requestAnimationFrame(() => {
-        if (lastStyleModalPosition) {
-          applyPosition(lastStyleModalPosition.left, lastStyleModalPosition.top);
-        }
-      });
-    }
-    handleEl.addEventListener("pointerdown", (event3) => {
-      if (event3.button !== 0 || event3.target.closest(".modal-close-button")) {
-        return;
-      }
-      const rect3 = modalEl.getBoundingClientRect();
-      const offsetX = event3.clientX - rect3.left;
-      const offsetY = event3.clientY - rect3.top;
-      handleEl.setPointerCapture(event3.pointerId);
-      modalEl.addClass("is-dragging");
-      event3.preventDefault();
-      const onMove = (moveEvent) => {
-        applyPosition(moveEvent.clientX - offsetX, moveEvent.clientY - offsetY);
-      };
-      const onUp = () => {
-        modalEl.removeClass("is-dragging");
-        handleEl.removeEventListener("pointermove", onMove);
-        handleEl.removeEventListener("pointerup", onUp);
-        handleEl.removeEventListener("pointercancel", onUp);
-      };
-      handleEl.addEventListener("pointermove", onMove);
-      handleEl.addEventListener("pointerup", onUp);
-      handleEl.addEventListener("pointercancel", onUp);
-    });
   }
   buildSavedPresetsSection(container2) {
     const section = this.createSection(
@@ -233898,6 +233905,7 @@ var UpdateAvailableModal = class extends import_obsidian9.Modal {
     this.updateInfo = updateInfo;
   }
   onOpen() {
+    makeModalDraggable(this, { positionKey: "update" });
     const { contentEl, titleEl } = this;
     titleEl.setText("\u53D1\u73B0\u65B0\u7248\u672C");
     contentEl.empty();
