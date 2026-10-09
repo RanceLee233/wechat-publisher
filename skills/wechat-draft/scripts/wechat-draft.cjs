@@ -51783,6 +51783,119 @@ function resolveFontFamily(theme, styleProfile) {
   }
   return styleProfile.fontFamily ?? theme.typography.fontFamily;
 }
+var HEADING_NUMBER_FONT = "Georgia, 'Times New Roman', 'Songti SC', serif";
+var NUMBERED_H2_STYLES = /* @__PURE__ */ new Set(["numbered", "hanging", "section"]);
+function buildH2Css(styleProfile, palette) {
+  const margin = `calc(${styleProfile.headingTopMargin} + 0.5em) 8px calc(${styleProfile.headingBottomMargin} + 0.2em)`;
+  switch (styleProfile.h2Style) {
+    case "numbered":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.28em;
+    line-height: 1.45;
+  }
+  .wxp-root h2 .wxp-h2-num {
+    display: table;
+    margin: 0 0 0.45em;
+    padding-bottom: 0.2em;
+    border-bottom: 1px solid ${palette.primary};
+    color: ${palette.primary};
+    font-family: ${HEADING_NUMBER_FONT};
+    font-size: 0.62em;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+  }
+  .wxp-root h2 .wxp-h2-text {
+    display: block;
+  }`;
+    case "hanging":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.25em;
+    line-height: 1.45;
+  }
+  .wxp-root h2 .wxp-h2-num {
+    display: inline-block;
+    margin-right: 0.45em;
+    color: ${palette.primary};
+    font-family: ${HEADING_NUMBER_FONT};
+    font-size: 1.45em;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+  .wxp-root h2 .wxp-h2-text {
+    display: inline;
+  }`;
+    case "section":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.25em;
+    line-height: 1.45;
+  }
+  .wxp-root h2 .wxp-h2-num {
+    display: block;
+    margin-bottom: 0.3em;
+    color: ${palette.primary};
+    font-size: 0.56em;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    line-height: 1.4;
+  }
+  .wxp-root h2 .wxp-h2-text {
+    display: block;
+  }`;
+    case "underline":
+      return `
+  .wxp-root h2 {
+    display: table;
+    margin: ${margin};
+    padding-bottom: 0.3em;
+    border-bottom: 2px solid ${palette.primary};
+    color: ${palette.text};
+    font-size: 1.22em;
+  }`;
+    case "center-rule":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.25em;
+    text-align: center;
+  }
+  .wxp-root h2 .wxp-h2-rule {
+    display: block;
+    width: 32px;
+    margin: 12px auto 0;
+    border-top: 2px solid ${palette.primary};
+    font-size: 0;
+    line-height: 0;
+  }`;
+    case "text":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.primary};
+    font-size: 1.3em;
+    line-height: 1.45;
+  }`;
+    default:
+      return null;
+  }
+}
 function buildCss(theme, styleProfile) {
   const palette = resolvePalette(theme, styleProfile);
   const { typography, radius } = theme;
@@ -51798,6 +51911,25 @@ function buildCss(theme, styleProfile) {
     background: ${palette.primary};
     color: ${palette.background};
     font-size: 1.45em;
+    text-align: center;
+  }` : styleProfile.h1Style === "text" ? `
+  .wxp-root h1 {
+    display: block;
+    margin: ${styleProfile.headingTopMargin} 8px ${styleProfile.headingBottomMargin};
+    color: ${palette.text};
+    font-size: 1.5em;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }` : styleProfile.h1Style === "double-rule" ? `
+  .wxp-root h1 {
+    display: block;
+    margin: ${styleProfile.headingTopMargin} 8px ${styleProfile.headingBottomMargin};
+    padding: 0.55em 0.4em;
+    border-top: 1px solid ${palette.primary};
+    border-bottom: 1px solid ${palette.primary};
+    color: ${palette.text};
+    font-size: 1.42em;
+    letter-spacing: 0.04em;
     text-align: center;
   }` : styleProfile.h1Style === "outline" ? `
   .wxp-root h1 {
@@ -51818,7 +51950,8 @@ function buildCss(theme, styleProfile) {
     font-size: 1.45em;
     text-align: center;
   }`;
-  const h2Block = styleProfile.h2Style === "plain" ? `
+  const h2Block = buildH2Css(styleProfile, palette);
+  const legacyH2Block = styleProfile.h2Style === "plain" ? `
   .wxp-root h2 {
     display: block;
     margin: calc(${styleProfile.headingTopMargin} + 0.5em) 8px calc(${styleProfile.headingBottomMargin} + 0.2em);
@@ -51965,7 +52098,7 @@ function buildCss(theme, styleProfile) {
     line-height: 1.35;
   }
   ${h1Block}
-  ${h2Block}
+  ${h2Block ?? legacyH2Block}
   ${h3Block}
   ${h4Block}
   .wxp-root p,
@@ -52323,6 +52456,29 @@ function buildRenderer(styleProfile) {
     const macHeader = styleProfile.showMacCodeHeader === false ? "" : `<div class="wxp-code-header">${MAC_DOTS}</div>`;
     return `<section class="wxp-code-block">${macHeader}<code class="hljs">${highlighted}</code></section>`;
   };
+  let h2Counter = 0;
+  renderer.heading = function({ tokens, depth }) {
+    const inlineHtml = this.parser.parseInline(tokens);
+    if (depth !== 2) {
+      return `<h${depth}>${inlineHtml}</h${depth}>
+`;
+    }
+    if (styleProfile.h2Style === "center-rule") {
+      return `<h2>${inlineHtml}<span class="wxp-h2-rule">&#8203;</span></h2>
+`;
+    }
+    if (!NUMBERED_H2_STYLES.has(styleProfile.h2Style ?? "")) {
+      return `<h2>${inlineHtml}</h2>
+`;
+    }
+    const explicit = inlineHtml.match(/^\s*(\d{1,3})[.．、]\s*/);
+    h2Counter = explicit ? Number(explicit[1]) : h2Counter + 1;
+    const textHtml = explicit ? inlineHtml.slice(explicit[0].length) : inlineHtml;
+    const padded = String(h2Counter).padStart(2, "0");
+    const label = styleProfile.h2Style === "section" ? `SECTION ${padded}` : padded;
+    return `<h2><span class="wxp-h2-num">${label}</span><span class="wxp-h2-text">${textHtml}</span></h2>
+`;
+  };
   renderer.codespan = ({ text }) => `<code>${escapeHtml(text)}</code>`;
   renderer.paragraph = function({ tokens = [] }) {
     const inlineHtml = this.parser.parseInline(tokens);
@@ -52376,7 +52532,7 @@ function collectHeadings(html2) {
   for (const match of html2.matchAll(/<h([1-6])>([\s\S]*?)<\/h\1>/g)) {
     index += 1;
     const rawLevel = match[1];
-    const inner = match[2];
+    const inner = match[2].replace(/<span class="wxp-h2-num">[\s\S]*?<\/span>/g, "").replace(/<span class="wxp-h2-rule">[\s\S]*?<\/span>/g, "");
     const text = stripMarkdownSyntax(inner);
     headings.push({
       id: `wxp-heading-${index}`,
@@ -52781,6 +52937,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "paper-orange",
+    "group": "personality",
     "label": "\u7EB8\u4E0A\u70E7\u6A59",
     "description": "\u5976\u6CB9\u7EB8\u8272\u4E0E\u70E7\u6A59\uFF0C\u5EF6\u7EED\u535A\u5BA2\u7684\u6E29\u6696\u7F16\u8F91\u98CE\u3002",
     "radius": "6px",
@@ -52808,6 +52965,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "electric-violet",
+    "group": "personality",
     "label": "\u7535\u5149\u7D2B",
     "description": "\u6D45\u51B7\u5E95\u3001\u7535\u7D2B\u6807\u9898\u4E0E\u9752\u8272\u7EC6\u8282\uFF0C\u9002\u5408 AI \u4E0E\u65B0\u5DE5\u5177\u3002",
     "radius": "6px",
@@ -52835,6 +52993,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "neon-terminal",
+    "group": "personality",
     "label": "\u9713\u8679\u7EC8\u7AEF",
     "description": "\u6DF1\u84DD\u9ED1\u5E95\u3001\u7535\u9752\u6807\u9898\u4E0E\u73AB\u7EA2\u70B9\u7F00\uFF0C\u9002\u5408\u6280\u672F\u4E13\u9898\u3002",
     "radius": "4px",
@@ -52862,6 +53021,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "acid-print",
+    "group": "personality",
     "label": "\u9178\u6027\u5370\u5237",
     "description": "\u9ED1\u767D\u6B63\u6587\u3001\u8367\u5149\u9EC4\u7EFF\u6807\u8BB0\uFF0C\u50CF\u9192\u76EE\u7684\u72EC\u7ACB\u520A\u7269\u3002",
     "radius": "2px",
@@ -52886,6 +53046,151 @@ var BUILTIN_THEMES = [
       "headingWeight": 700
     },
     "cssOverrides": ".wxp-root blockquote{background:#F1F7D9;}.wxp-root strong{background:#E5FF62;color:#20241B;}.wxp-root hr{border-top:4px solid #20241B;}"
+  },
+  {
+    id: "linen",
+    label: "\u4E9A\u9EBB",
+    description: "\u6696\u7070\u7559\u767D \xB7 \u5C45\u4E2D\u77ED\u7EBF\u6807\u9898\uFF0C\u9002\u5408\u957F\u6587\u4E0E\u751F\u6D3B\u968F\u7B14\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#7A6650",
+      primarySoft: "#F3EEE7",
+      secondary: "#6E655B",
+      text: "#3A342E",
+      background: "#FFFFFF",
+      surface: "#F7F4EF",
+      border: "#E4DDD3",
+      link: "#6F5A44",
+      codeBackground: "#2E2924",
+      codeText: "#F2ECE4",
+      quoteBackground: "#F7F4EF"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "text", h2Style: "center-rule", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #7A6650;}.wxp-root th{background:#F7F4EF;border-top:2px solid #7A6650;}"
+  },
+  {
+    id: "monograph",
+    label: "\u94C5\u5B57",
+    description: "\u9ED1\u767D\u520A\u7269 \xB7 \u4E0B\u5212\u7EBF\u6807\u9898\uFF0C\u9002\u5408\u6DF1\u5EA6\u62A5\u9053\u4E0E\u4EBA\u7269\u6587\u7AE0\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#262626",
+      primarySoft: "#F2F2EF",
+      secondary: "#5E5E5A",
+      text: "#2E2E2C",
+      background: "#FFFFFF",
+      surface: "#F6F6F3",
+      border: "#DADAD5",
+      link: "#262626",
+      codeBackground: "#1C1C1B",
+      codeText: "#F2F2EE",
+      quoteBackground: "#F6F6F3"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "double-rule", h2Style: "underline", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #262626;}.wxp-root th{background:#F6F6F3;border-top:2px solid #262626;}"
+  },
+  {
+    id: "pine",
+    label: "\u677E\u70DF",
+    description: "\u677E\u9752\u4E66\u9875 \xB7 \u7F16\u53F7\u520A\u5934\uFF0C\u9002\u5408\u4EBA\u6587\u4E0E\u77E5\u8BC6\u957F\u6587\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#2D6A5C",
+      primarySoft: "#E9F2EE",
+      secondary: "#4F665E",
+      text: "#2F3A36",
+      background: "#FFFFFF",
+      surface: "#F3F8F5",
+      border: "#D3E2DB",
+      link: "#2A6457",
+      codeBackground: "#17251F",
+      codeText: "#E4F1EB",
+      quoteBackground: "#F3F8F5"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "text", h2Style: "numbered", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #2D6A5C;}.wxp-root th{background:#F3F8F5;border-top:2px solid #2D6A5C;}"
+  },
+  {
+    id: "indigo-grid",
+    label: "\u975B\u9752",
+    description: "\u7406\u6027\u84DD\u8C03 \xB7 \u82F1\u6587\u7709\u6807\uFF0C\u9002\u5408\u79D1\u6280\u3001\u65B9\u6CD5\u4E0E\u6570\u636E\u89E3\u8BFB\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#2856B0",
+      primarySoft: "#EAF0FB",
+      secondary: "#56627A",
+      text: "#353C48",
+      background: "#FFFFFF",
+      surface: "#F2F5FC",
+      border: "#DCE3F0",
+      link: "#2856B0",
+      codeBackground: "#141B2B",
+      codeText: "#E6ECF8",
+      quoteBackground: "#F2F5FC"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "text", h2Style: "section", h3Style: "bar", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #2856B0;}.wxp-root th{background:#F2F5FC;border-top:2px solid #2856B0;}"
+  },
+  {
+    id: "ochre-red",
+    label: "\u8D6D\u7EA2",
+    description: "\u7816\u7EA2\u7BC7\u7AE0 \xB7 \u60AC\u6302\u7F16\u53F7\uFF0C\u9002\u5408\u89C2\u70B9\u3001\u6587\u5316\u4E0E\u54C1\u724C\u6545\u4E8B\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#A2443A",
+      primarySoft: "#F8ECE9",
+      secondary: "#6E5A55",
+      text: "#3B302D",
+      background: "#FFFFFF",
+      surface: "#FBF6F3",
+      border: "#EBD9D3",
+      link: "#9A3E35",
+      codeBackground: "#2A1E1B",
+      codeText: "#F6E9E5",
+      quoteBackground: "#FBF6F3"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "double-rule", h2Style: "hanging", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #A2443A;}.wxp-root th{background:#FBF6F3;border-top:2px solid #A2443A;}"
   }
 ];
 var BUILTIN_STYLE_PROFILES = [
@@ -53031,8 +53336,9 @@ async function imageFile(filename) {
 }
 function render(markdown2, themeId = "classic", styleId = "balanced") {
   const theme = BUILTIN_THEMES.find((t) => t.id === themeId);
-  const styleProfile = BUILTIN_STYLE_PROFILES.find((t) => t.id === styleId);
-  if (!theme || !styleProfile) fail("\u672A\u77E5\u4E3B\u9898\u6216\u6392\u7248\u6A21\u677F\uFF0C\u8BF7\u8FD0\u884C themes \u67E5\u770B\u53EF\u7528\u9879\u3002");
+  const baseProfile = BUILTIN_STYLE_PROFILES.find((t) => t.id === styleId);
+  if (!theme || !baseProfile) fail("\u672A\u77E5\u4E3B\u9898\u6216\u6392\u7248\u6A21\u677F\uFF0C\u8BF7\u8FD0\u884C themes \u67E5\u770B\u53EF\u7528\u9879\u3002");
+  const styleProfile = { ...baseProfile, ...theme.styleDefaults ?? {} };
   if (/!\[\[|```(?:mermaid|math)|\$\$/.test(markdown2) || /\$[^$\n]+\$/.test(markdown2.replace(/```[\s\S]*?```|`[^`\n]*`/g, ""))) fail("\u72EC\u7ACB Skill \u6682\u4E0D\u652F\u6301 Wiki \u56FE\u7247\u3001Mermaid \u6216\u5757\u7EA7\u6570\u5B66\u516C\u5F0F\uFF0C\u8BF7\u5148\u8F6C\u6362\u4E3A\u6807\u51C6 Markdown \u56FE\u7247\u3002");
   const $ = (0, import_cheerio.load)(renderMarkdownToWechatHtml(markdown2, { theme, styleProfile }).html, null, false);
   $("script,iframe,object,embed,form,input,button,link,meta,style").remove();

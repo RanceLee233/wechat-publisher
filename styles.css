@@ -1481,3 +1481,217 @@
 .wp-menu-new { flex-shrink: 0; padding: 2px 5px; border-radius: 4px; font-size: 10px; line-height: 1.5; color: var(--text-normal); background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-primary)); }
 .wp-menu-item--support .wp-menu-icon { color: #B9651B; }
 .theme-dark .wp-menu-item--support .wp-menu-icon { color: #F3AD65; }
+
+/* ============================================================
+   Theme groups + device preview (v1.3.0)
+============================================================ */
+
+.wp-theme-group-label {
+  padding: 8px 8px 4px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.wp-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.wp-status-row .wp-status {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+.wp-device-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--background-modifier-hover);
+}
+
+.wp-device-switch .wp-device-option {
+  height: 22px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.wp-device-switch .wp-device-option.is-active {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.wp-device-switch .wp-device-option:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+.wp-preview-wrap.is-device {
+  background: var(--background-secondary);
+}
+
+.wp-phone-stage {
+  display: flex;
+  justify-content: center;
+}
+
+.wp-phone {
+  --wp-phone-width: 440px;
+  box-sizing: content-box;
+  position: relative;
+  width: var(--wp-phone-width);
+  max-width: 100%;
+  padding: 0 0 22px;
+  overflow: hidden;
+  border: 10px solid #1c1c1e;
+  border-radius: 54px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 18px 40px rgba(0, 0, 0, 0.18);
+  color: #111111;
+}
+
+.wp-phone-android {
+  --wp-phone-width: 412px;
+  border-width: 8px;
+  border-radius: 36px;
+}
+
+.wp-phone-statusbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 46px;
+  padding: 0 28px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.wp-phone-android .wp-phone-statusbar {
+  height: 34px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.wp-phone-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 112px;
+  height: 30px;
+  border-radius: 20px;
+  background: #000000;
+  transform: translateX(-50%);
+}
+
+.wp-phone-camera {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #000000;
+  transform: translateX(-50%);
+}
+
+.wp-phone-indicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wp-phone-signal {
+  width: 16px;
+  height: 10px;
+  background: linear-gradient(to right, #111 0 3px, transparent 3px 4.3px, #111 4.3px 7.3px, transparent 7.3px 8.6px, #111 8.6px 11.6px, transparent 11.6px 12.9px, #111 12.9px 16px);
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+.wp-phone-battery {
+  width: 24px;
+  height: 11px;
+  border: 1.5px solid #111111;
+  border-radius: 3.5px;
+  background: linear-gradient(to right, #111 0 78%, transparent 78%);
+  background-clip: content-box;
+  padding: 1px;
+}
+
+.wp-phone-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 16px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.wp-phone-nav-more {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.wp-phone-screen {
+  padding: 4px 16px 24px;
+}
+
+.wp-phone-screen .wp-article {
+  max-width: none;
+}
+
+.wp-phone-article-header {
+  padding: 8px 0 12px;
+}
+
+.wp-phone-article-title {
+  margin-bottom: 12px;
+  color: rgba(0, 0, 0, 0.9);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.wp-phone-article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: rgba(0, 0, 0, 0.3);
+  font-size: 15px;
+}
+
+.wp-phone-article-account {
+  color: #576b95;
+}
+
+.wp-phone-home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: #111111;
+  transform: translateX(-50%);
+}
+
+.wp-phone-android .wp-phone-home-indicator {
+  width: 110px;
+  height: 4px;
+}

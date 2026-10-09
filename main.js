@@ -229071,6 +229071,119 @@ function resolveFontFamily(theme, styleProfile) {
   }
   return styleProfile.fontFamily ?? theme.typography.fontFamily;
 }
+var HEADING_NUMBER_FONT = "Georgia, 'Times New Roman', 'Songti SC', serif";
+var NUMBERED_H2_STYLES = /* @__PURE__ */ new Set(["numbered", "hanging", "section"]);
+function buildH2Css(styleProfile, palette) {
+  const margin = `calc(${styleProfile.headingTopMargin} + 0.5em) 8px calc(${styleProfile.headingBottomMargin} + 0.2em)`;
+  switch (styleProfile.h2Style) {
+    case "numbered":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.28em;
+    line-height: 1.45;
+  }
+  .wxp-root h2 .wxp-h2-num {
+    display: table;
+    margin: 0 0 0.45em;
+    padding-bottom: 0.2em;
+    border-bottom: 1px solid ${palette.primary};
+    color: ${palette.primary};
+    font-family: ${HEADING_NUMBER_FONT};
+    font-size: 0.62em;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+  }
+  .wxp-root h2 .wxp-h2-text {
+    display: block;
+  }`;
+    case "hanging":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.25em;
+    line-height: 1.45;
+  }
+  .wxp-root h2 .wxp-h2-num {
+    display: inline-block;
+    margin-right: 0.45em;
+    color: ${palette.primary};
+    font-family: ${HEADING_NUMBER_FONT};
+    font-size: 1.45em;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+  .wxp-root h2 .wxp-h2-text {
+    display: inline;
+  }`;
+    case "section":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.25em;
+    line-height: 1.45;
+  }
+  .wxp-root h2 .wxp-h2-num {
+    display: block;
+    margin-bottom: 0.3em;
+    color: ${palette.primary};
+    font-size: 0.56em;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    line-height: 1.4;
+  }
+  .wxp-root h2 .wxp-h2-text {
+    display: block;
+  }`;
+    case "underline":
+      return `
+  .wxp-root h2 {
+    display: table;
+    margin: ${margin};
+    padding-bottom: 0.3em;
+    border-bottom: 2px solid ${palette.primary};
+    color: ${palette.text};
+    font-size: 1.22em;
+  }`;
+    case "center-rule":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.text};
+    font-size: 1.25em;
+    text-align: center;
+  }
+  .wxp-root h2 .wxp-h2-rule {
+    display: block;
+    width: 32px;
+    margin: 12px auto 0;
+    border-top: 2px solid ${palette.primary};
+    font-size: 0;
+    line-height: 0;
+  }`;
+    case "text":
+      return `
+  .wxp-root h2 {
+    display: block;
+    margin: ${margin};
+    color: ${palette.primary};
+    font-size: 1.3em;
+    line-height: 1.45;
+  }`;
+    default:
+      return null;
+  }
+}
 function buildCss(theme, styleProfile) {
   const palette = resolvePalette(theme, styleProfile);
   const { typography, radius: radius2 } = theme;
@@ -229086,6 +229199,25 @@ function buildCss(theme, styleProfile) {
     background: ${palette.primary};
     color: ${palette.background};
     font-size: 1.45em;
+    text-align: center;
+  }` : styleProfile.h1Style === "text" ? `
+  .wxp-root h1 {
+    display: block;
+    margin: ${styleProfile.headingTopMargin} 8px ${styleProfile.headingBottomMargin};
+    color: ${palette.text};
+    font-size: 1.5em;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }` : styleProfile.h1Style === "double-rule" ? `
+  .wxp-root h1 {
+    display: block;
+    margin: ${styleProfile.headingTopMargin} 8px ${styleProfile.headingBottomMargin};
+    padding: 0.55em 0.4em;
+    border-top: 1px solid ${palette.primary};
+    border-bottom: 1px solid ${palette.primary};
+    color: ${palette.text};
+    font-size: 1.42em;
+    letter-spacing: 0.04em;
     text-align: center;
   }` : styleProfile.h1Style === "outline" ? `
   .wxp-root h1 {
@@ -229106,7 +229238,8 @@ function buildCss(theme, styleProfile) {
     font-size: 1.45em;
     text-align: center;
   }`;
-  const h2Block = styleProfile.h2Style === "plain" ? `
+  const h2Block = buildH2Css(styleProfile, palette);
+  const legacyH2Block = styleProfile.h2Style === "plain" ? `
   .wxp-root h2 {
     display: block;
     margin: calc(${styleProfile.headingTopMargin} + 0.5em) 8px calc(${styleProfile.headingBottomMargin} + 0.2em);
@@ -229253,7 +229386,7 @@ function buildCss(theme, styleProfile) {
     line-height: 1.35;
   }
   ${h1Block}
-  ${h2Block}
+  ${h2Block ?? legacyH2Block}
   ${h3Block}
   ${h4Block}
   .wxp-root p,
@@ -229611,6 +229744,29 @@ function buildRenderer(styleProfile) {
     const macHeader = styleProfile.showMacCodeHeader === false ? "" : `<div class="wxp-code-header">${MAC_DOTS}</div>`;
     return `<section class="wxp-code-block">${macHeader}<code class="hljs">${highlighted}</code></section>`;
   };
+  let h2Counter = 0;
+  renderer12.heading = function({ tokens: tokens2, depth }) {
+    const inlineHtml = this.parser.parseInline(tokens2);
+    if (depth !== 2) {
+      return `<h${depth}>${inlineHtml}</h${depth}>
+`;
+    }
+    if (styleProfile.h2Style === "center-rule") {
+      return `<h2>${inlineHtml}<span class="wxp-h2-rule">&#8203;</span></h2>
+`;
+    }
+    if (!NUMBERED_H2_STYLES.has(styleProfile.h2Style ?? "")) {
+      return `<h2>${inlineHtml}</h2>
+`;
+    }
+    const explicit = inlineHtml.match(/^\s*(\d{1,3})[.．、]\s*/);
+    h2Counter = explicit ? Number(explicit[1]) : h2Counter + 1;
+    const textHtml = explicit ? inlineHtml.slice(explicit[0].length) : inlineHtml;
+    const padded = String(h2Counter).padStart(2, "0");
+    const label = styleProfile.h2Style === "section" ? `SECTION ${padded}` : padded;
+    return `<h2><span class="wxp-h2-num">${label}</span><span class="wxp-h2-text">${textHtml}</span></h2>
+`;
+  };
   renderer12.codespan = ({ text: text6 }) => `<code>${escapeHtml(text6)}</code>`;
   renderer12.paragraph = function({ tokens: tokens2 = [] }) {
     const inlineHtml = this.parser.parseInline(tokens2);
@@ -229664,7 +229820,7 @@ function collectHeadings(html5) {
   for (const match2 of html5.matchAll(/<h([1-6])>([\s\S]*?)<\/h\1>/g)) {
     index2 += 1;
     const rawLevel = match2[1];
-    const inner2 = match2[2];
+    const inner2 = match2[2].replace(/<span class="wxp-h2-num">[\s\S]*?<\/span>/g, "").replace(/<span class="wxp-h2-rule">[\s\S]*?<\/span>/g, "");
     const text6 = stripMarkdownSyntax(inner2);
     headings.push({
       id: `wxp-heading-${index2}`,
@@ -230069,6 +230225,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "paper-orange",
+    "group": "personality",
     "label": "\u7EB8\u4E0A\u70E7\u6A59",
     "description": "\u5976\u6CB9\u7EB8\u8272\u4E0E\u70E7\u6A59\uFF0C\u5EF6\u7EED\u535A\u5BA2\u7684\u6E29\u6696\u7F16\u8F91\u98CE\u3002",
     "radius": "6px",
@@ -230096,6 +230253,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "electric-violet",
+    "group": "personality",
     "label": "\u7535\u5149\u7D2B",
     "description": "\u6D45\u51B7\u5E95\u3001\u7535\u7D2B\u6807\u9898\u4E0E\u9752\u8272\u7EC6\u8282\uFF0C\u9002\u5408 AI \u4E0E\u65B0\u5DE5\u5177\u3002",
     "radius": "6px",
@@ -230123,6 +230281,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "neon-terminal",
+    "group": "personality",
     "label": "\u9713\u8679\u7EC8\u7AEF",
     "description": "\u6DF1\u84DD\u9ED1\u5E95\u3001\u7535\u9752\u6807\u9898\u4E0E\u73AB\u7EA2\u70B9\u7F00\uFF0C\u9002\u5408\u6280\u672F\u4E13\u9898\u3002",
     "radius": "4px",
@@ -230150,6 +230309,7 @@ var BUILTIN_THEMES = [
   },
   {
     "id": "acid-print",
+    "group": "personality",
     "label": "\u9178\u6027\u5370\u5237",
     "description": "\u9ED1\u767D\u6B63\u6587\u3001\u8367\u5149\u9EC4\u7EFF\u6807\u8BB0\uFF0C\u50CF\u9192\u76EE\u7684\u72EC\u7ACB\u520A\u7269\u3002",
     "radius": "2px",
@@ -230174,6 +230334,151 @@ var BUILTIN_THEMES = [
       "headingWeight": 700
     },
     "cssOverrides": ".wxp-root blockquote{background:#F1F7D9;}.wxp-root strong{background:#E5FF62;color:#20241B;}.wxp-root hr{border-top:4px solid #20241B;}"
+  },
+  {
+    id: "linen",
+    label: "\u4E9A\u9EBB",
+    description: "\u6696\u7070\u7559\u767D \xB7 \u5C45\u4E2D\u77ED\u7EBF\u6807\u9898\uFF0C\u9002\u5408\u957F\u6587\u4E0E\u751F\u6D3B\u968F\u7B14\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#7A6650",
+      primarySoft: "#F3EEE7",
+      secondary: "#6E655B",
+      text: "#3A342E",
+      background: "#FFFFFF",
+      surface: "#F7F4EF",
+      border: "#E4DDD3",
+      link: "#6F5A44",
+      codeBackground: "#2E2924",
+      codeText: "#F2ECE4",
+      quoteBackground: "#F7F4EF"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "text", h2Style: "center-rule", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #7A6650;}.wxp-root th{background:#F7F4EF;border-top:2px solid #7A6650;}"
+  },
+  {
+    id: "monograph",
+    label: "\u94C5\u5B57",
+    description: "\u9ED1\u767D\u520A\u7269 \xB7 \u4E0B\u5212\u7EBF\u6807\u9898\uFF0C\u9002\u5408\u6DF1\u5EA6\u62A5\u9053\u4E0E\u4EBA\u7269\u6587\u7AE0\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#262626",
+      primarySoft: "#F2F2EF",
+      secondary: "#5E5E5A",
+      text: "#2E2E2C",
+      background: "#FFFFFF",
+      surface: "#F6F6F3",
+      border: "#DADAD5",
+      link: "#262626",
+      codeBackground: "#1C1C1B",
+      codeText: "#F2F2EE",
+      quoteBackground: "#F6F6F3"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "double-rule", h2Style: "underline", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #262626;}.wxp-root th{background:#F6F6F3;border-top:2px solid #262626;}"
+  },
+  {
+    id: "pine",
+    label: "\u677E\u70DF",
+    description: "\u677E\u9752\u4E66\u9875 \xB7 \u7F16\u53F7\u520A\u5934\uFF0C\u9002\u5408\u4EBA\u6587\u4E0E\u77E5\u8BC6\u957F\u6587\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#2D6A5C",
+      primarySoft: "#E9F2EE",
+      secondary: "#4F665E",
+      text: "#2F3A36",
+      background: "#FFFFFF",
+      surface: "#F3F8F5",
+      border: "#D3E2DB",
+      link: "#2A6457",
+      codeBackground: "#17251F",
+      codeText: "#E4F1EB",
+      quoteBackground: "#F3F8F5"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "text", h2Style: "numbered", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #2D6A5C;}.wxp-root th{background:#F3F8F5;border-top:2px solid #2D6A5C;}"
+  },
+  {
+    id: "indigo-grid",
+    label: "\u975B\u9752",
+    description: "\u7406\u6027\u84DD\u8C03 \xB7 \u82F1\u6587\u7709\u6807\uFF0C\u9002\u5408\u79D1\u6280\u3001\u65B9\u6CD5\u4E0E\u6570\u636E\u89E3\u8BFB\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#2856B0",
+      primarySoft: "#EAF0FB",
+      secondary: "#56627A",
+      text: "#353C48",
+      background: "#FFFFFF",
+      surface: "#F2F5FC",
+      border: "#DCE3F0",
+      link: "#2856B0",
+      codeBackground: "#141B2B",
+      codeText: "#E6ECF8",
+      quoteBackground: "#F2F5FC"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "text", h2Style: "section", h3Style: "bar", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #2856B0;}.wxp-root th{background:#F2F5FC;border-top:2px solid #2856B0;}"
+  },
+  {
+    id: "ochre-red",
+    label: "\u8D6D\u7EA2",
+    description: "\u7816\u7EA2\u7BC7\u7AE0 \xB7 \u60AC\u6302\u7F16\u53F7\uFF0C\u9002\u5408\u89C2\u70B9\u3001\u6587\u5316\u4E0E\u54C1\u724C\u6545\u4E8B\u3002",
+    group: "journal",
+    radius: "4px",
+    palette: {
+      primary: "#A2443A",
+      primarySoft: "#F8ECE9",
+      secondary: "#6E5A55",
+      text: "#3B302D",
+      background: "#FFFFFF",
+      surface: "#FBF6F3",
+      border: "#EBD9D3",
+      link: "#9A3E35",
+      codeBackground: "#2A1E1B",
+      codeText: "#F6E9E5",
+      quoteBackground: "#FBF6F3"
+    },
+    typography: {
+      fontFamily: "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', Arial, sans-serif",
+      fontSize: "16px",
+      lineHeight: 1.85,
+      letterSpacing: "0.03em",
+      headingWeight: 700
+    },
+    styleDefaults: { h1Style: "double-rule", h2Style: "hanging", h3Style: "plain", calloutStyleMode: "bar-square" },
+    cssOverrides: ".wxp-root h1,.wxp-root h2,.wxp-root h3{font-family:'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;}.wxp-root blockquote{border-left-width:2px;}.wxp-root hr{width:36px;margin:2.4em auto;border-top:1px solid #A2443A;}.wxp-root th{background:#FBF6F3;border-top:2px solid #A2443A;}"
   }
 ];
 function getThemeById(themeId) {
@@ -230285,6 +230590,21 @@ var BUILTIN_STYLE_PROFILES = [
 function getStyleProfileById(styleId) {
   return BUILTIN_STYLE_PROFILES.find((style3) => style3.id === styleId) ?? BUILTIN_STYLE_PROFILES[0];
 }
+var THEME_GROUPS = [
+  { id: "classic", label: "\u7ECF\u5178" },
+  { id: "personality", label: "\u4E2A\u6027" },
+  { id: "journal", label: "\u520A\u7269" }
+];
+function getThemeGroup(theme) {
+  return theme.group ?? "classic";
+}
+function resolveStyleProfile(styleId, theme, overrides = {}) {
+  return {
+    ...getStyleProfileById(styleId),
+    ...theme.styleDefaults ?? {},
+    ...overrides
+  };
+}
 
 // src/account-modal.ts
 var import_obsidian = require("obsidian");
@@ -230322,6 +230642,7 @@ function createEntitlementsForPlan(plan) {
 }
 
 // src/types.ts
+var PREVIEW_DEVICES = ["web", "iphone", "android"];
 var DRAFT_RECORD_RETENTION_DAYS = 14;
 var DRAFT_RECORD_LIMIT = 200;
 var COVER_MEDIA_RECORD_RETENTION_DAYS = 365;
@@ -230343,6 +230664,7 @@ var DEFAULT_SETTINGS = {
   checkForUpdatesOnStartup: false,
   updateFeedUrl: "",
   skippedUpdateVersion: null,
+  previewDevice: "web",
   entitlements: createEntitlementsForPlan("free")
 };
 function createEmptyAccount() {
@@ -231701,6 +232023,11 @@ var CommunityModal = class extends import_obsidian4.Modal {
 };
 
 // src/preview-view.ts
+var PREVIEW_DEVICE_OPTIONS = [
+  { id: "web", label: "\u7F51\u9875", title: "\u7F51\u9875\u9884\u89C8\uFF08\u516C\u4F17\u53F7\u7F51\u9875\u7248\u5BBD\u5EA6\uFF09" },
+  { id: "iphone", label: "iPhone", title: "\u8FD1\u4F3C iPhone 17 Pro Max \u5C4F\u5E55\u5BBD\u5EA6\uFF0C\u771F\u673A\u5B57\u4F53\u6E32\u67D3\u53EF\u80FD\u7565\u6709\u5DEE\u5F02" },
+  { id: "android", label: "\u5B89\u5353", title: "\u8FD1\u4F3C\u4E09\u661F Galaxy S26 Ultra \u5C4F\u5E55\u5BBD\u5EA6\uFF0C\u771F\u673A\u5B57\u4F53\u6E32\u67D3\u53EF\u80FD\u7565\u6709\u5DEE\u5F02" }
+];
 var PREVIEW_VIEW_TYPE = "wechat-publisher-preview";
 var SVG_NS = "http://www.w3.org/2000/svg";
 var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
@@ -231748,6 +232075,7 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
   toolbarHidden = false;
   // Status meta + preview
   metaEl = null;
+  deviceSwitchEl = null;
   previewEl = null;
   // Scroll sync state (preserved from previous implementation)
   syncEnabled = false;
@@ -231784,7 +232112,9 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
         trigger?.focus();
       }
     });
-    this.metaEl = this.containerEl.createDiv({ cls: "wp-status" });
+    const statusRow = this.containerEl.createDiv({ cls: "wp-status-row" });
+    this.metaEl = statusRow.createDiv({ cls: "wp-status" });
+    this.renderDeviceSwitch(statusRow);
     this.previewEl = this.containerEl.createDiv({ cls: "wp-preview-wrap" });
     this.onDocumentMouseDown = (e3) => this.handleDocumentMouseDown(e3);
     document.addEventListener("mousedown", this.onDocumentMouseDown);
@@ -232172,33 +232502,14 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
     advRow.remove();
     const themeHeader = this.themeMenuEl.createDiv({ cls: "wp-theme-section-header" });
     themeHeader.setText("\u4E3B\u9898\u98CE\u683C");
-    const themeGrid = this.themeMenuEl.createDiv({ cls: "wp-theme-grid" });
-    for (const theme of allThemes) {
-      const row = themeGrid.createEl("button", {
-        cls: "wp-menu-item wp-theme-menu-item"
-      });
-      if (theme.id === currentThemeId) row.addClass("current");
-      const swatch = row.createSpan({ cls: "wp-theme-swatch" });
-      swatch.style.backgroundColor = theme.palette.primary;
-      row.setAttr("title", theme.description);
-      const body = row.createDiv({ cls: "wp-theme-item-body" });
-      const nameLine = body.createDiv({ cls: "wp-theme-item-name" });
-      nameLine.setText(theme.label);
-      body.createDiv({
-        cls: "wp-theme-item-desc",
-        text: theme.description
-      });
-      if (theme.id === currentThemeId) {
-        const check = row.createEl("span", { cls: "wp-account-item-check" });
-        this.appendIcon(check, "check", { size: 14 });
+    for (const group2 of THEME_GROUPS) {
+      const groupThemes = allThemes.filter((theme) => getThemeGroup(theme) === group2.id);
+      if (groupThemes.length === 0) continue;
+      this.themeMenuEl.createDiv({ cls: "wp-theme-group-label", text: group2.label });
+      const themeGrid = this.themeMenuEl.createDiv({ cls: "wp-theme-grid" });
+      for (const theme of groupThemes) {
+        this.renderThemeGridItem(themeGrid, theme, currentThemeId);
       }
-      row.addEventListener("click", () => {
-        void (async () => {
-          await this.plugin.updateDefaultTheme(theme.id);
-          this.closeThemeMenu();
-          await this.refresh();
-        })();
-      });
     }
     this.themeMenuEl.createDiv({ cls: "wp-menu-sep" });
     const styleHeader = this.themeMenuEl.createDiv({ cls: "wp-theme-section-header" });
@@ -232227,6 +232538,33 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
       });
     }
     this.themeMenuEl.appendChild(advRow);
+  }
+  renderThemeGridItem(container2, theme, currentThemeId) {
+    const row = container2.createEl("button", {
+      cls: "wp-menu-item wp-theme-menu-item"
+    });
+    if (theme.id === currentThemeId) row.addClass("current");
+    const swatch = row.createSpan({ cls: "wp-theme-swatch" });
+    swatch.style.backgroundColor = theme.palette.primary;
+    row.setAttr("title", theme.description);
+    const body = row.createDiv({ cls: "wp-theme-item-body" });
+    const nameLine = body.createDiv({ cls: "wp-theme-item-name" });
+    nameLine.setText(theme.label);
+    body.createDiv({
+      cls: "wp-theme-item-desc",
+      text: theme.description
+    });
+    if (theme.id === currentThemeId) {
+      const check = row.createEl("span", { cls: "wp-account-item-check" });
+      this.appendIcon(check, "check", { size: 14 });
+    }
+    row.addEventListener("click", () => {
+      void (async () => {
+        await this.plugin.updateDefaultTheme(theme.id);
+        this.closeThemeMenu();
+        await this.refresh();
+      })();
+    });
   }
   updateThemePill() {
     if (!this.themePillNameEl) return;
@@ -232526,6 +232864,7 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
     const payload = await this.plugin.getRenderPayload(this.plugin.settings.defaultThemeId);
     this.previewEl.empty();
     this.previewEl.style.removeProperty("background-color");
+    this.previewEl.removeClass("is-device");
     if (!payload) {
       this.setNewspicUiMode(false);
       this.metaEl.setText("\u8BF7\u5148\u5728\u4E3B\u7F16\u8F91\u533A\u6253\u5F00\u4E00\u7BC7 Markdown \u7B14\u8BB0\u3002");
@@ -232549,17 +232888,83 @@ var WeChatPublisherPreviewView = class extends import_obsidian5.ItemView {
     this.metaEl.setText(
       `${payload.file.path} \xB7 \u4E3B\u9898 ${payload.theme.label} \xB7 \u6392\u7248 ${payload.styleProfile.label} \xB7 \u56FE\u7247 ${payload.result.metadata.images.length} \u5F20`
     );
-    const articleEl = this.previewEl.createDiv({ cls: "wp-article" });
+    const device = this.plugin.settings.previewDevice;
+    this.previewEl.toggleClass("is-device", device !== "web");
+    const articleHost = device === "web" ? this.previewEl : this.renderPhoneFrame(device, publishMetaDraft.title, publishMetaDraft.author);
+    const articleEl = articleHost.createDiv({ cls: "wp-article" });
     articleEl.innerHTML = payload.result.html;
     const page = articleEl.querySelector(".wxp-root");
-    if (page) this.previewEl.style.backgroundColor = page.style.backgroundColor;
+    if (page) {
+      const target = device === "web" ? this.previewEl : articleHost;
+      target.style.backgroundColor = page.style.backgroundColor;
+    }
     this.updateMetaCard(publishMetaDraft);
+  }
+  renderDeviceSwitch(container2) {
+    this.deviceSwitchEl = container2.createDiv({ cls: "wp-device-switch" });
+    this.deviceSwitchEl.setAttr("role", "radiogroup");
+    this.deviceSwitchEl.setAttr("aria-label", "\u9884\u89C8\u8BBE\u5907");
+    for (const option2 of PREVIEW_DEVICE_OPTIONS) {
+      const button = this.deviceSwitchEl.createEl("button", {
+        cls: "wp-device-option",
+        text: option2.label
+      });
+      button.setAttr("role", "radio");
+      button.setAttr("title", option2.title);
+      button.dataset.device = option2.id;
+      button.addEventListener("click", () => {
+        void this.setPreviewDevice(option2.id);
+      });
+    }
+    this.syncDeviceSwitch();
+  }
+  syncDeviceSwitch() {
+    if (!this.deviceSwitchEl) return;
+    const current = this.plugin.settings.previewDevice;
+    for (const button of Array.from(this.deviceSwitchEl.querySelectorAll("button"))) {
+      const active = button.dataset.device === current;
+      button.toggleClass("is-active", active);
+      button.setAttr("aria-checked", active ? "true" : "false");
+    }
+  }
+  async setPreviewDevice(device) {
+    if (this.plugin.settings.previewDevice === device) return;
+    this.plugin.settings.previewDevice = device;
+    this.syncDeviceSwitch();
+    await this.plugin.saveSettings({ refreshPreview: false });
+    await this.refresh();
+  }
+  /** 画出手机外框和微信文章页头，返回承载正文的屏幕容器。仅影响预览，不改变复制/发布的 HTML。 */
+  renderPhoneFrame(device, title2, author) {
+    const stage = this.previewEl.createDiv({ cls: "wp-phone-stage" });
+    const phone = stage.createDiv({ cls: `wp-phone wp-phone-${device}` });
+    const statusBar = phone.createDiv({ cls: "wp-phone-statusbar" });
+    statusBar.createSpan({ cls: "wp-phone-time", text: device === "iphone" ? "9:41" : "12:30" });
+    statusBar.createSpan({ cls: device === "iphone" ? "wp-phone-island" : "wp-phone-camera" });
+    const indicators = statusBar.createSpan({ cls: "wp-phone-indicators" });
+    indicators.createSpan({ cls: "wp-phone-signal" });
+    indicators.createSpan({ cls: "wp-phone-battery" });
+    const navBar = phone.createDiv({ cls: "wp-phone-navbar" });
+    navBar.createSpan({ cls: "wp-phone-nav-back", text: "\u2039" });
+    navBar.createSpan({ cls: "wp-phone-nav-more", text: "\xB7\xB7\xB7" });
+    const screen2 = phone.createDiv({ cls: "wp-phone-screen" });
+    const header = screen2.createDiv({ cls: "wp-phone-article-header" });
+    header.createDiv({ cls: "wp-phone-article-title", text: title2 || "\u672A\u547D\u540D\u6587\u7AE0" });
+    const metaLine = header.createDiv({ cls: "wp-phone-article-meta" });
+    if (author) metaLine.createSpan({ text: author });
+    metaLine.createSpan({
+      cls: "wp-phone-article-account",
+      text: this.plugin.getPreferredAccount()?.name || "\u516C\u4F17\u53F7\u540D\u79F0"
+    });
+    phone.createDiv({ cls: "wp-phone-home-indicator" });
+    return screen2;
   }
   setNewspicUiMode(enabled) {
     for (const field of this.articleDrawerFieldEls) {
       field.toggle(!enabled);
     }
     this.newspicDrawerHintEl?.toggle(enabled);
+    this.deviceSwitchEl?.toggle(!enabled);
     if (this.themePillEl) {
       this.themePillEl.disabled = enabled;
       this.themePillEl.toggleClass("is-disabled", enabled);
@@ -233358,9 +233763,17 @@ var FONT_PRESET_OPTIONS = [
 var H1_STYLE_OPTIONS = [
   { value: "underline", label: "\u5C45\u4E2D\u4E0B\u5212\u7EBF" },
   { value: "solid", label: "\u6574\u5757\u8272\u5E26" },
-  { value: "outline", label: "\u63CF\u8FB9\u5706\u89D2\u6846" }
+  { value: "outline", label: "\u63CF\u8FB9\u5706\u89D2\u6846" },
+  { value: "text", label: "\u5C45\u4E2D\u7EAF\u6587\u5B57" },
+  { value: "double-rule", label: "\u4E0A\u4E0B\u7EC6\u7EBF" }
 ];
 var H2_STYLE_OPTIONS = [
+  { value: "numbered", label: "\u7F16\u53F7\u520A\u5934\uFF08\u81EA\u52A8\u7F16\u53F7\uFF09" },
+  { value: "hanging", label: "\u60AC\u6302\u7F16\u53F7\uFF08\u81EA\u52A8\u7F16\u53F7\uFF09" },
+  { value: "section", label: "\u82F1\u6587\u7709\u6807\uFF08\u81EA\u52A8\u7F16\u53F7\uFF09" },
+  { value: "underline", label: "\u6587\u5B57\u4E0B\u5212\u7EBF" },
+  { value: "center-rule", label: "\u5C45\u4E2D\u77ED\u7EBF" },
+  { value: "text", label: "\u7EAF\u6587\u5B57\u5F3A\u8C03" },
   { value: "solid", label: "\u6574\u5757\u8272\u5E26" },
   { value: "plain", label: "\u5DE6\u4FA7\u7AD6\u7EBF" },
   { value: "capsule", label: "\u80F6\u56CA\u6807\u7B7E" }
@@ -233889,10 +234302,7 @@ var StyleConfigModal = class extends import_obsidian8.Modal {
     void this.plugin.refreshPreviewLeaves();
   }
   getEffectiveStyle() {
-    return {
-      ...getStyleProfileById(this.plugin.settings.defaultStyleId),
-      ...this.plugin.settings.styleOverrides
-    };
+    return this.plugin.getCurrentStyleProfile();
   }
 };
 
@@ -235617,6 +236027,7 @@ var WeChatPublisherPlugin = class extends import_obsidian11.Plugin {
         ...DEFAULT_SETTINGS.styleOverrides,
         ...loaded?.styleOverrides ?? {}
       },
+      previewDevice: PREVIEW_DEVICES.includes(loaded?.previewDevice) ? loaded.previewDevice : DEFAULT_SETTINGS.previewDevice,
       accounts: Array.isArray(loaded?.accounts) ? loaded.accounts.map(
         (account) => normalizePublisherAccount(account)
       ) : [],
@@ -236048,10 +236459,8 @@ var WeChatPublisherPlugin = class extends import_obsidian11.Plugin {
     return nextFrontmatter;
   }
   getCurrentStyleProfile() {
-    return {
-      ...getStyleProfileById(this.settings.defaultStyleId),
-      ...this.settings.styleOverrides
-    };
+    const theme = getThemeById(this.resolveAccessibleThemeId(this.settings.defaultThemeId));
+    return resolveStyleProfile(this.settings.defaultStyleId, theme, this.settings.styleOverrides);
   }
   getDraftRecord(filePath, accountId, articleType = "news") {
     return this.settings.draftRecords.find(
